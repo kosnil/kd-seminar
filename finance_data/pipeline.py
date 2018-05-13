@@ -8,6 +8,14 @@ if(os.path.exists("data")==False):
 else:
     print("- Database already existing")
 
-print("- Update Database if necessary")
+print("- Start Database Update Script")
 os.system("python data_update.py")
-print("- Update done")
+print("- End Database Update Script")
+
+print("- Start Calculate Returns Script")
+os.system("python data_calculate_returns.py")
+print("- End Calculate Returns Script")
+
+print("- Start Data Aggregation Script")
+os.system("python data_aggregation.py")
+print("- End Data Aggregation Script")
