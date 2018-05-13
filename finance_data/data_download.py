@@ -1,6 +1,7 @@
 import requests
 import pandas as pd
 import os
+import numpy as np
 
 print("-- Start Data Download ")
 API_KEY = "5Z6D01U9OW2CZ202"
@@ -27,6 +28,8 @@ for id in STOCKS:
     df = df.reset_index()
     df = df[['Timestamp','4. close']]
     df.columns = ['Timestamp',id]
+    df[id] = np.log(df[id]) - np.log(df[id].shift(1))
+    df = df.dropna()
 
     # Save to CSV
     PATH = "data/"+ id + ".csv"

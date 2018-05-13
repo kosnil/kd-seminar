@@ -30,6 +30,9 @@ for id in STOCKS:
     df = df.reset_index()
     df = df[['Timestamp','4. close']]
     df.columns = ['Timestamp',id]
+    df[id] = np.log(df[id]) - np.log(df[id].shift(1))
+    df = df.dropna()
+
     new_max_date = df['Timestamp'].max()
 
     if(new_max_date>max_date):
