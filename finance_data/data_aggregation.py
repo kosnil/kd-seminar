@@ -12,6 +12,6 @@ for id in STOCKS:
     df = pd.read_csv(PATH,sep=",",index_col=0)
     database = pd.merge(df,database,on="Timestamp")
 
-database.to_csv("data/aggregated_prices.csv", sep=",", header=True)
+database.to_csv("data/aggregated_returns.csv", sep=",", header=True)
 
 print("-- End Data Aggregation ")
