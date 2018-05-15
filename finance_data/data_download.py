@@ -13,6 +13,7 @@ if(os.path.exists(DIRECTORY_PATH)==False):
 else:
     print("Directory already exists!")
 
+
 for id in STOCKS:
     params = {'function': 'TIME_SERIES_DAILY', 'symbol': id,'outputsize':'full','datatype':'json','apikey':API_KEY}
     raw_data = requests.get("https://www.alphavantage.co/query",params=params)
@@ -30,6 +31,7 @@ for id in STOCKS:
     df.columns = ['Timestamp',id]
     df[id] = np.log(df[id]) - np.log(df[id].shift(1))
     df = df.dropna()
+    df = df.reset_index(drop=True)
 
     # Save to CSV
     PATH = "data/"+ id + ".csv"

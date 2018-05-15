@@ -32,13 +32,14 @@ for id in STOCKS:
     df.columns = ['Timestamp',id]
     df[id] = np.log(df[id]) - np.log(df[id].shift(1))
     df = df.dropna()
+    df = df.reset_index(drop=True)
 
     new_max_date = df['Timestamp'].max()
 
     if(new_max_date>max_date):
         print("--- Append additional rows to Database")
         database = database.append(df.iloc[np.where(df['Timestamp']>max_date)])
-        database = database.reset_index()
+        database = database.reset_index(drop=True)
 
         # Save to CSV
         print("--- Save Database to csv ", PATH)
