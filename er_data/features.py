@@ -2,8 +2,7 @@ import eventregistry as ER
 import datetime
 from collections import defaultdict
 from tone_analyzer import tone_ibm
-#tone_analyzer/tone_ibm import ibm_sentiment
-#import tone_analyzer/tone_ibm.py as ibm
+
 import pickle
 
 er = ER.EventRegistry(apiKey="5ba73408-ea81-459b-abf4-6fedd8cb8ec6")  # dany
@@ -30,15 +29,11 @@ for company in companies:
     art_sentiment_max = 0
     art_sentiment_min = 0
 
-    #file = open('../tone_analyzer/article_files.txt', 'wb')
-
     # iterate over articles
     for article in articles:
-        #print('$$$$ ARTICLE: {}'.format(article['body']))
-        #pickle.dump(article['body'], file)
-        #print(type(article['body']))
-        tone_score = tone_ibm.ibm_sentiment(article['body'])
-        print('IBM sentiment score: {}'.format(tone_score))
+
+        ibm_sentiment = tone_ibm.getSentiment(article['body'])
+        print('IBM sentiment score: {}'.format(ibm_sentiment))
 
 
         # article count

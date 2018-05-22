@@ -9,7 +9,7 @@ import time
 # service analyzes    the first 1000 sentences for document level analysis
 #                     the first 100 sentences for sentence level analysis
 #
-def ibm_sentiment(article):
+def getSentiment(article):
     start = time.time()
     tone_analyzer = ToneAnalyzerV3(
         version='2017-09-21',
