@@ -28,7 +28,7 @@ def getSentiment(article):
     except WatsonApiException as ex:
         print("Tone Analyzer failed with status code " + str(ex.code) + ": " + ex.message)
     end = time.time()
-    #print(json.dumps(response, indent=2))
+    print(json.dumps(response, indent=2))
     #print('time: {} '.format(end - start))
     return response['document_tone']
 

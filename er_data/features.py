@@ -5,6 +5,7 @@ import json
 import pandas as pd
 import csv
 import os.path
+from ibm import tone_ibm
 
 #INITIALIZE global variables
 companies_csv = "../companies.csv"
@@ -55,7 +56,7 @@ for company in companies:
         sentiment_df = sentiment_df.append({0: sentiment_value}, ignore_index=True)
 
         #IBM Sentiment
-        #ibm_sentiment = ibm.getSentiment(article['body'])
+        ibm_sentiment = tone_ibm.getSentiment(article['body'])
 
 
     #COMBINING RESULTS
