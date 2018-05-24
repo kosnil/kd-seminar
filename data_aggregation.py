@@ -11,7 +11,7 @@ if(os.path.exists("final_data")==False):
 
 print("- Start Aggregate! ")
 print("-- Import Datasets")
-er_data = pd.read_csv("er_data/data/companies.csv",index_col=0,header=0,parse_dates=["Timestamp"])
+er_data = pd.read_csv("er_data/data/sentiment_features_complete.csv",index_col=0,header=0,parse_dates=["Timestamp"])
 stock_data = pd.read_csv('finance_data/data/aggregated_returns.csv',index_col=0,header=0,parse_dates=['Timestamp'])
 
 print("-- Merge Datasets")

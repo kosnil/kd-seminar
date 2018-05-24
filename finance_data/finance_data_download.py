@@ -19,9 +19,6 @@ for id in STOCKS:
     start = raw_data.text.find("Time Series (Daily)")+len("Time Series (Daily) :")
     end = len(raw_data.text)-1
 
-    #if id == "BMW.DE":
-    #    print(raw_data.text)
-
     # Subtract Timezone
     timeZone = raw_data.text[tz+len("Time Zone:")+3:start-len("Time Series (Daily) :")-14]
     print("--- Timezone ", timeZone)

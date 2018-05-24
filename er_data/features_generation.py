@@ -12,8 +12,8 @@ companies = ['Samsung','BASF','Apple','Tesla','Airbus','Bayer','BMW','Telefonica
 
 
 #DEFINE start and end date
-startDate = datetime.date(2018, 4, 22)
-endDate = datetime.date(2018, 5, 22)
+startDate = datetime.date(2018, 2, 23)
+endDate = datetime.date(2018, 2, 23)
 
 #DEFINE df results columns
 columns = ['Timestamp',"ID","articleCount","avgSentiment","stdSentiment","25quantileSentiment","50quantileSentiment","75quantileSentiment","maxSentiment","minSentiment"]
@@ -21,24 +21,32 @@ results = pd.DataFrame(index=range(0,pd.date_range(startDate,endDate).shape[0]*l
 result_index = 0
 
 for company in companies:
+    print("- Starting article processing for company :", company)
     # QUERY articles related to current company
     q = ER.QueryArticlesIter(conceptUri=er.getConceptUri(company), dateStart=startDate, dateEnd=endDate)
     articles = q.execQuery(er,sortBy = "date")
 
     # Init Company Sentiment DF
+    # Each day equals one column --> All sentiments of one day in one column
     sentiment_df = pd.DataFrame(index=range(0,2000),columns=pd.date_range(startDate,endDate).format("%Y-%m-%d")[1:])
+
     # INITIALIZE local variables
     ibm_sentiment = 0
     article_count = 0
     stock_occurences = 0
     index= 0
     date = pd.date_range(startDate,endDate).format("%Y-%m-%d")[len(pd.date_range(startDate,endDate))]
-    #ITERATE over all articles about the current company
+    print("-- Start  prcessing day : ", date)
+    # Iterate over all articles about the current company
+    # Calculate Sentiment and save in day`s column and index
     for article in articles:
+
         if date != article['date']:
             index = 0
+            print("-- Day fully processed : ", date)
 
-        #TEXT FEATURES
+        # Calculate text feature
+        # Count Occurences of word "Stock" in article
         if 'stock' in article['body']:
              stock_occurences += 1
 
@@ -49,26 +57,27 @@ for company in companies:
         index += 1
         date = article['date']
 
+    # Fill in the resulting df from sentiment_df
     for day in sentiment_df.columns:
-
-        # gefine the total number of articles
 
         results.iloc[result_index]['Timestamp'] = str(day)
         results.iloc[result_index]['ID'] = company
         results.iloc[result_index]['articleCount'] = sentiment_df[day].count()
         results.iloc[result_index]['avgSentiment'] = sentiment_df[day].mean()
         results.iloc[result_index]['stdSentiment'] = sentiment_df[day].std()
-        result2s.iloc[result_index]['25quantileSentiment'] = sentiment_df[day].quantile(0.25)
+        results.iloc[result_index]['25quantileSentiment'] = sentiment_df[day].quantile(0.25)
         results.iloc[result_index]['50quantileSentiment'] = sentiment_df[day].quantile(0.50)
         results.iloc[result_index]['75quantileSentiment'] = sentiment_df[day].quantile(0.75)
         results.iloc[result_index]['maxSentiment'] = sentiment_df[day].min()
         results.iloc[result_index]['minSentiment'] = sentiment_df[day].max()
         result_index += 1
 
+    print("-- Company fully processed : ", company)
 
-print(results)
+print(" - All Articles fully processed")
 results['Timestamp'] = pd.to_datetime(results['Timestamp'],format="%Y-%m-%d")
-PATH = "data/companies.csv"
+print(" - Save Data to csv")
+PATH = "data/sentiment_features_"+ str(startDate) +"_" + str(endDate) +".csv"
 results.to_csv(PATH, sep=",", header=True)
 
 
