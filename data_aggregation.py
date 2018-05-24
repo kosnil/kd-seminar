@@ -15,6 +15,12 @@ er_data = pd.read_csv("er_data/data/sentiment_features_complete.csv",index_col=0
 stock_data = pd.read_csv('finance_data/data/aggregated_returns.csv',index_col=0,header=0,parse_dates=['Timestamp'])
 
 print("-- Merge Datasets")
+
+#TODO hier IBM Sentiment Daten einfügen und mit ER Sentiment Daten mergen
+#ibm_data = pd.read_csv("ibm/data/sentiment_features_complete.csv",index_col=0,header=0,parse_dates=["Timestamp"])
+# sentiment_data = er_data.merge(ibm_data,on=['Timestamp','ID'])
+# df = sentiment_data.merge(stock_data,on='Timestamp')
+
 df = er_data.merge(stock_data,on='Timestamp')
 df['Previous_Day_Return'] = np.zeros(df.shape[0])
 df['Next_Day_Return'] = np.zeros(df.shape[0])
