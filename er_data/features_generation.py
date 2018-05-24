@@ -9,8 +9,7 @@ er = ER.EventRegistry(apiKey="5ba73408-ea81-459b-abf4-6fedd8cb8ec6")  # dany
 analytics = ER.Analytics(er)
 
 # DEFINE companies
-#companies = ['Samsung', 'BASF', 'Apple', 'Tesla', 'Airbus', 'Bayer', 'BMW', 'Telefonica', 'Google', 'Allianz', 'Total']
-companies = ['BASF','Total']
+companies = ['Samsung', 'BASF', 'Apple', 'Tesla', 'Airbus', 'Bayer', 'BMW', 'Telefonica', 'Google', 'Allianz', 'Total']
 # DEFINE start and end date
 startDate = datetime.date(2018, 4, 22)
 endDate = datetime.date(2018, 4, 22)
