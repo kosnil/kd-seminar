@@ -35,7 +35,7 @@ def getSentiment(article):
     except WatsonApiException as ex:
         print("Tone Analyzer failed with status code " + str(ex.code) + ": " + ex.message)
     end = time.time()
-    print(json.dumps(response, indent=2))
+    #print(json.dumps(response, indent=2))
     # print('time: {} '.format(end - start))
     #ibm_sentiment = treatScore(response)
     ibm_sentiment = countScore(response)
@@ -108,10 +108,8 @@ def countScore(score):
                 fear_count = 1
             elif tone['tone_id'] == 'joy':
                 joy_count = 1
-    print(analytical_count)
     sentiment_ibm_df = [sadness_count, anger_count, fear_count, joy_count,
                         analytical_count, confident_count, tentative_count]
-    print(sentiment_ibm_df)
     return sentiment_ibm_df
 
     # #ibm

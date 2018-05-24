@@ -4,21 +4,23 @@ import pandas as pd
 from ibm import tone_ibm
 
 er = ER.EventRegistry(apiKey="5ba73408-ea81-459b-abf4-6fedd8cb8ec6")  # dany
-# er = ER.EventRegistry(apiKey = "5fed3642-762a-4abc-aabf-ac6213c1bcea")  #philipp
+##  er = ER.EventRegistry(apiKey = "5fed3642-762a-4abc-aabf-ac6213c1bcea")  #philipp
+#er = ER.EventRegistry(apiKey="dfa0a9e9-a9d7-497f-acab-54d08234bf88")
 analytics = ER.Analytics(er)
 
 # DEFINE companies
-companies = ['Samsung', 'BASF', 'Apple', 'Tesla', 'Airbus', 'Bayer', 'BMW', 'Telefonica', 'Google', 'Allianz', 'Total']
-
+#companies = ['Samsung', 'BASF', 'Apple', 'Tesla', 'Airbus', 'Bayer', 'BMW', 'Telefonica', 'Google', 'Allianz', 'Total']
+companies = ['BASF','Total']
 # DEFINE start and end date
-startDate = datetime.date(2018, 2, 23)
-endDate = datetime.date(2018, 2, 23)
+startDate = datetime.date(2018, 4, 22)
+endDate = datetime.date(2018, 4, 22)
 
 # DEFINE df results columns
 columns = ['Timestamp', "ID", "articleCount", "avgSentiment", "stdSentiment", "25quantileSentiment",
-           "50quantileSentiment", "75quantileSentiment", "maxSentiment", "minSentiment", "sadness_count", "anger_count",
+           "50quantileSentiment", "75quantileSentiment", "maxSentiment", "minSentiment","ibm_articleCount", "sadness_count", "anger_count",
            "fear_count", "joy_count", "analytical_count", "confident_count", "tentative_count"]
 results = pd.DataFrame(index=range(0, pd.date_range(startDate, endDate).shape[0] * len(companies)), columns=columns)
+#results.fillna(value=0,inplace=True)
 result_index = 0
 
 for company in companies:
@@ -27,7 +29,6 @@ for company in companies:
     # QUERY articles related to current company
     q = ER.QueryArticlesIter(conceptUri=er.getConceptUri(company), dateStart=startDate, dateEnd=endDate)
     articles = q.execQuery(er, sortBy="date")
-
     # Init Company Sentiment DF
     # Each day equals one column --> All sentiments of one day in one column
     sentiment_df = pd.DataFrame(index=range(0, 2000), columns=pd.date_range(startDate, endDate).format("%Y-%m-%d")[1:])
@@ -43,7 +44,14 @@ for company in companies:
     print("-- Start  prcessing day : ", date)
     # Iterate over all articles about the current company
     # Calculate Sentiment and save in day`s column and index
-    for article in articles:
+    while True:
+        try:
+            article = next(articles)
+        except AssertionError:
+            print("Article throws assertion error!")
+            continue
+        except StopIteration:
+            break
 
         if date != article['date']:
             index = 0
@@ -63,7 +71,6 @@ for company in companies:
 
         # Sentiment ibm
         sentiment_ibm_df[article['date']] += tone_ibm.getSentiment(article['body'])
-        print(sentiment_ibm_df)
 
     # Fill in the resulting df from sentiment_df
     for day in sentiment_df.columns:
@@ -78,18 +85,22 @@ for company in companies:
         results.iloc[result_index]['maxSentiment'] = sentiment_df[day].min()
         results.iloc[result_index]['minSentiment'] = sentiment_df[day].max()
         #ibm
-        results.iloc[result_index]['sadness_count'] = sentiment_ibm_df[day].iloc[0]
-        results.iloc[result_index]['anger_count'] = sentiment_ibm_df[day].iloc[1]
-        results.iloc[result_index]['fear_count'] = sentiment_ibm_df[day].iloc[2]
-        results.iloc[result_index]['joy_count'] = sentiment_ibm_df[day].iloc[3]
-        results.iloc[result_index]['analytical_count'] = sentiment_ibm_df[day].iloc[4]
-        results.iloc[result_index]['confident_count'] = sentiment_ibm_df[day].iloc[5]
-        results.iloc[result_index]['tentative_count'] = sentiment_ibm_df[day].iloc[6]
+        results.iloc[result_index]['ibm_articleCount'] = sentiment_ibm_df[day].sum()
+
+        if results.iloc[result_index]['ibm_articleCount'] > 0:
+            results.iloc[result_index]['sadness_count'] = sentiment_ibm_df[day].iloc[0]/results.iloc[result_index]['ibm_articleCount']
+            results.iloc[result_index]['anger_count'] = sentiment_ibm_df[day].iloc[1]/results.iloc[result_index]['ibm_articleCount']
+            results.iloc[result_index]['fear_count'] = sentiment_ibm_df[day].iloc[2]/results.iloc[result_index]['ibm_articleCount']
+            results.iloc[result_index]['joy_count'] = sentiment_ibm_df[day].iloc[3]/results.iloc[result_index]['ibm_articleCount']
+            results.iloc[result_index]['analytical_count'] = sentiment_ibm_df[day].iloc[4]/results.iloc[result_index]['ibm_articleCount']
+            results.iloc[result_index]['confident_count'] = sentiment_ibm_df[day].iloc[5]/results.iloc[result_index]['ibm_articleCount']
+            results.iloc[result_index]['tentative_count'] = sentiment_ibm_df[day].iloc[6]/results.iloc[result_index]['ibm_articleCount']
 
         result_index += 1
 
     print("-- Company fully processed : ", company)
 
+results.fillna(value=0, inplace=True)
 print(" - All Articles fully processed")
 results['Timestamp'] = pd.to_datetime(results['Timestamp'], format="%Y-%m-%d")
 print(" - Save Data to csv")
