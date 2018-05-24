@@ -1,48 +1,42 @@
 import eventregistry as ER
 import datetime
-from collections import defaultdict
-import json
 import pandas as pd
-import csv
-import os.path
 
-#INITIALIZE global variables
-companies_csv = "../companies.csv"
+
 er = ER.EventRegistry(apiKey = "5ba73408-ea81-459b-abf4-6fedd8cb8ec6")  #dany
-er = ER.EventRegistry(apiKey = "5fed3642-762a-4abc-aabf-ac6213c1bcea")  #philipp
+#er = ER.EventRegistry(apiKey = "5fed3642-762a-4abc-aabf-ac6213c1bcea")  #philipp
 analytics = ER.Analytics(er)
-results = defaultdict(defaultdict)
 
 #DEFINE companies
-companies = ['BASF','Samsung']
-#If file is found in 'companies_csv', file is loaded instead
-if os.path.exists(companies_csv):
-    companies = []
-    with open(companies_csv) as f:
-        reader = csv.reader(f)
-        for line in reader:
-            companies.append(line[0])
-print('Companies viewed:',companies)
-
-#DEFINE date
-date = datetime.date(2018, 5, 19)
+companies = ['Samsung','BASF','Apple','Tesla','Airbus','Bayer','BMW','Telefonica','Google','Allianz','Total']
 
 
-#ITERATE over companies
+#DEFINE start and end date
+startDate = datetime.date(2018, 4, 22)
+endDate = datetime.date(2018, 5, 22)
+
+#DEFINE df results columns
+columns = ['Timestamp',"ID","articleCount","avgSentiment","stdSentiment","25quantileSentiment","50quantileSentiment","75quantileSentiment","maxSentiment","minSentiment"]
+results = pd.DataFrame(index=range(0,pd.date_range(startDate,endDate).shape[0]*len(companies)),columns=columns)
+result_index = 0
+
 for company in companies:
     # QUERY articles related to current company
-    q = ER.QueryArticlesIter(conceptUri=er.getConceptUri(company), dateStart=date, dateEnd=date)
-    articles = q.execQuery(er)
+    q = ER.QueryArticlesIter(conceptUri=er.getConceptUri(company), dateStart=startDate, dateEnd=endDate)
+    articles = q.execQuery(er,sortBy = "date")
 
-    #INITIALIZE local variables
-    results[company] = defaultdict()
-    sentiment_df = pd.DataFrame()
+    # Init Company Sentiment DF
+    sentiment_df = pd.DataFrame(index=range(0,2000),columns=pd.date_range(startDate,endDate).format("%Y-%m-%d")[1:])
+    # INITIALIZE local variables
     ibm_sentiment = 0
     article_count = 0
     stock_occurences = 0
-
+    index= 0
+    date = pd.date_range(startDate,endDate).format("%Y-%m-%d")[len(pd.date_range(startDate,endDate))]
     #ITERATE over all articles about the current company
     for article in articles:
+        if date != article['date']:
+            index = 0
 
         #TEXT FEATURES
         if 'stock' in article['body']:
@@ -51,35 +45,31 @@ for company in companies:
         #SENTIMENT
         #calculating sentiment value from 'article body'
         sentiment_value = analytics.sentiment(article['body'])['avgSent']
-        #append article sentiment value to the companies sentiment data frame
-        sentiment_df = sentiment_df.append({0: sentiment_value}, ignore_index=True)
+        sentiment_df[article['date']][index] = sentiment_value
+        index += 1
+        date = article['date']
 
-        #IBM Sentiment
-        #ibm_sentiment = ibm.getSentiment(article['body'])
+    for day in sentiment_df.columns:
 
+        # gefine the total number of articles
 
-    #COMBINING RESULTS
-    #summarize the sentiment distribution
-    sentiment_df_summary = sentiment_df.describe()
-    #gefine the total number of articles
-    article_count = int(sentiment_df_summary[0]["count"])
-
-    #fill the results dictionary
-    results[company]['articleCount'] = article_count
-    results[company]['avgSentiment'] = sentiment_df_summary[0]["mean"]
-    results[company]['stdSentiment'] = sentiment_df_summary[0]["std"]
-    results[company]['25quantileSentiment'] = sentiment_df_summary[0]["25%"]
-    results[company]['50quantileSentiment'] = sentiment_df_summary[0]["50%"]
-    results[company]['75quantileSentiment'] = sentiment_df_summary[0]["75%"]
-    results[company]['maxSentiment'] = sentiment_df_summary[0]["max"]
-    results[company]['minSentiment'] = sentiment_df_summary[0]["min"]
-    results[company]['avgStockOccurence'] = stock_occurences/article_count
-    results[company]['ibmSentiment'] = ibm_sentiment
-
-#Print resulting JSON
-print(json.dumps(results, indent=2))
+        results.iloc[result_index]['Timestamp'] = str(day)
+        results.iloc[result_index]['ID'] = company
+        results.iloc[result_index]['articleCount'] = sentiment_df[day].count()
+        results.iloc[result_index]['avgSentiment'] = sentiment_df[day].mean()
+        results.iloc[result_index]['stdSentiment'] = sentiment_df[day].std()
+        result2s.iloc[result_index]['25quantileSentiment'] = sentiment_df[day].quantile(0.25)
+        results.iloc[result_index]['50quantileSentiment'] = sentiment_df[day].quantile(0.50)
+        results.iloc[result_index]['75quantileSentiment'] = sentiment_df[day].quantile(0.75)
+        results.iloc[result_index]['maxSentiment'] = sentiment_df[day].min()
+        results.iloc[result_index]['minSentiment'] = sentiment_df[day].max()
+        result_index += 1
 
 
+print(results)
+results['Timestamp'] = pd.to_datetime(results['Timestamp'],format="%Y-%m-%d")
+PATH = "data/companies.csv"
+results.to_csv(PATH, sep=",", header=True)
 
 
 
@@ -98,3 +88,6 @@ print(json.dumps(results, indent=2))
 
 
 
+
+# Return vom Vortag als Feature rein für jede Zeile
+# Returns so drinne lassen
