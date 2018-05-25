@@ -2,6 +2,7 @@ import eventregistry as ER
 import datetime
 import pandas as pd
 from ibm import tone_ibm
+import time
 
 er = ER.EventRegistry(apiKey="5ba73408-ea81-459b-abf4-6fedd8cb8ec6")  # dany
 ##  er = ER.EventRegistry(apiKey = "5fed3642-762a-4abc-aabf-ac6213c1bcea")  #philipp
@@ -45,6 +46,7 @@ for company in companies:
     # Calculate Sentiment and save in day`s column and index
     while True:
         try:
+            article_time = time.time()
             article = next(articles)
         except AssertionError:
             print("Article throws assertion error!")
@@ -63,13 +65,18 @@ for company in companies:
 
         # SENTIMENT
         # calculating sentiment value from 'article body'
+        er_time = time.time()
         sentiment_value = analytics.sentiment(article['body'])['avgSent']
         sentiment_df[article['date']][index] = sentiment_value
+        print("ER TIME: " , time.time() - er_time)
         index += 1
         date = article['date']
 
         # Sentiment ibm
+        ibm_time = time.time()
         sentiment_ibm_df[article['date']] += tone_ibm.getSentiment(article['body'])
+        print("IBM TIME: " , time.time() - ibm_time)
+        print("Article TIME: ", time.time() - article_time)
 
     # Fill in the resulting df from sentiment_df
     for day in sentiment_df.columns:
@@ -103,7 +110,7 @@ results.fillna(value=0, inplace=True)
 print(" - All Articles fully processed")
 results['Timestamp'] = pd.to_datetime(results['Timestamp'], format="%Y-%m-%d")
 print(" - Save Data to csv")
-PATH = "data/sentiment_features_2018-05-01_2018-05-18.csv" + str(startDate) + "_" + str(endDate) + ".csv"
+PATH = "data/sentiment_features_" + str(startDate) + "_" + str(endDate) + ".csv"
 results.to_csv(PATH, sep=",", header=True)
 
 ##Faster approach. However sentiment is always 'None'. returnInfo needs to be understood better
