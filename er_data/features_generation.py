@@ -103,7 +103,7 @@ results.fillna(value=0, inplace=True)
 print(" - All Articles fully processed")
 results['Timestamp'] = pd.to_datetime(results['Timestamp'], format="%Y-%m-%d")
 print(" - Save Data to csv")
-PATH = "data/sentiment_features_" + str(startDate) + "_" + str(endDate) + ".csv"
+PATH = "data/sentiment_features_2018-05-01_2018-05-18.csv" + str(startDate) + "_" + str(endDate) + ".csv"
 results.to_csv(PATH, sep=",", header=True)
 
 ##Faster approach. However sentiment is always 'None'. returnInfo needs to be understood better

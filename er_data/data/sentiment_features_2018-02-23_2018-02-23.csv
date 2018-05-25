@@ -1,2 +1,0 @@
-,Timestamp,ID,articleCount,avgSentiment,stdSentiment,25quantileSentiment,50quantileSentiment,75quantileSentiment,maxSentiment,minSentiment,sadness_count,anger_count,fear_count,joy_count,analytical_count,confident_count,tentative_count
-0,2018-02-23,Total,151,0.004943985335856198,0.15605007098915966,-0.05574,0.0,0.006280000000000014,-0.6553777777777778,0.5017777777777778,23,2,4,38,23,0,7
