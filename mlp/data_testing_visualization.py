@@ -1,7 +1,9 @@
 import numpy as np
+import seaborn as sns
 import matplotlib.pyplot as plt
 import pandas as pd
 import statsmodels.api as sm
+from sklearn.model_selection import train_test_split
 
 '''
 Determine Input-Vector
@@ -10,10 +12,12 @@ Determine Input-Vector
 - want to maximize the input information, 
     - no random information 
     - input needs to carry highly significant information
+- testing of effects on the output-vector
 '''
 
 # read in data
 dataset     = pd.read_csv("final_data/complete_data.csv")
+dataset     = dataset.drop(columns=['Unnamed: 0'])
 dataset.head()
 
 # companies
@@ -22,6 +26,12 @@ companies   = dataset.ID.unique()
 for i in range(0, len(companies)):
     company     = dataset.loc[dataset['ID'] == companies[i]]
 
+    corr = company.corr()
+    sns.heatmap(corr,
+                xticklabels=corr.columns.values,
+                yticklabels=corr.columns.values)
+    plt.show()
+
     # define input vector
     X_train = company[[ 'articleCount', 'avgSentiment','stdSentiment',
                         '25quantileSentiment', '50quantileSentiment', '75quantileSentiment',
@@ -29,6 +39,9 @@ for i in range(0, len(companies)):
 
     # define output vector
     Y_train = company[['Next_Day_Return']]
+
+    # Split the data up in train and test sets
+    X_train, X_test, y_train, y_test = train_test_split(X_train, Y_train, test_size=0.33, random_state=42)
 
     plt.figure('Company: %s' % companies[i])
     plt.subplot(211).set_title('Input-Data')
@@ -168,3 +181,23 @@ for i in range(0, len(companies)):
     plt.show()
 
     plt.plot(X_train['articleCount'], label='AVG Sentiment')
+
+    fig, ax = plt.subplots(1, 2, figsize=(8, 4))
+
+    ax[0].scatter(red['quality'], red["sulphates"], color="red")
+    ax[1].scatter(white['quality'], white['sulphates'], color="white", edgecolors="black", lw=0.5)
+
+    ax[0].set_title("Red Wine")
+    ax[1].set_title("White Wine")
+    ax[0].set_xlabel("Quality")
+    ax[1].set_xlabel("Quality")
+    ax[0].set_ylabel("Sulphates")
+    ax[1].set_ylabel("Sulphates")
+    ax[0].set_xlim([0, 10])
+    ax[1].set_xlim([0, 10])
+    ax[0].set_ylim([0, 2.5])
+    ax[1].set_ylim([0, 2.5])
+    fig.subplots_adjust(wspace=0.5)
+    fig.suptitle("Wine Quality by Amount of Sulphates")
+
+    plt.show()
