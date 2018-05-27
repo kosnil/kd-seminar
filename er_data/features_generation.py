@@ -5,15 +5,15 @@ from ibm import tone_ibm
 import time
 
 er = ER.EventRegistry(apiKey="5ba73408-ea81-459b-abf4-6fedd8cb8ec6")  # dany
-##  er = ER.EventRegistry(apiKey = "5fed3642-762a-4abc-aabf-ac6213c1bcea")  #philipp
-#er = ER.EventRegistry(apiKey="dfa0a9e9-a9d7-497f-acab-54d08234bf88")
+# er = ER.EventRegistry(apiKey = "5fed3642-762a-4abc-aabf-ac6213c1bcea")  #philipp
+#er = ER.EventRegistry(apiKey="dfa0a9e9-a9d7-497f-acab-54d08234bf88") # von wem?
 analytics = ER.Analytics(er)
 
 # DEFINE companies
 companies = ['Samsung', 'BASF', 'Apple', 'Tesla', 'Airbus', 'Bayer', 'BMW', 'Telefonica', 'Google', 'Allianz', 'Total']
 # DEFINE start and end date
-startDate = datetime.date(2018, 4, 22)
-endDate = datetime.date(2018, 4, 22)
+startDate = datetime.date(2018, 5, 25)
+endDate = datetime.date(2018, 5, 25)
 
 # DEFINE df results columns
 columns = ['Timestamp', "ID", "articleCount", "avgSentiment", "stdSentiment", "25quantileSentiment",
