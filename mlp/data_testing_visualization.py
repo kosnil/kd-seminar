@@ -158,6 +158,8 @@ for i in range(0, len(companies)):
     plt_stdS = plt.scatter(Y_train['Next_Day_Return'], X_train['stdSentiment'], color=colors[2])
     plt_maxS = plt.scatter(Y_train['Next_Day_Return'], X_train['maxSentiment'], color=colors[3])
     plt_minS = plt.scatter(Y_train['Next_Day_Return'], X_train['minSentiment'], color=colors[4])
+    plt.xlabel('petal length [cm]')
+    plt.ylabel('sepal length [cm]')
     plt.legend((plt_pdR, plt_avgS, plt_stdS, plt_maxS, plt_minS),
                ('Previous_Day_Return', 'avgSentiment', 'stdSentiment', 'maxSentiment', 'minSentiment'),
                scatterpoints=1,
