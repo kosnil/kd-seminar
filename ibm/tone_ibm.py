@@ -27,8 +27,8 @@ def getSentiment(article):
     start = time.time()
     tone_analyzer = ToneAnalyzerV3(
         version='2017-09-21',
-        username="a0eef1a1-2775-4211-af6b-cca6c89d8693",
-        password="LFXlfgem2kZZ",
+        username="c80a8e92-463d-44f6-8f59-0361510df470",
+        password="154pwVYbbWJD",
         url="https://gateway.watsonplatform.net/tone-analyzer/api"
     )
 
