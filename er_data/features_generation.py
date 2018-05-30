@@ -6,13 +6,13 @@ import time
 from eventregistry import *
 from er_data import feature_socialscore
 
-# er = ER.EventRegistry(apiKey="5ba73408-ea81-459b-abf4-6fedd8cb8ec6")  # dany
+#er = ER.EventRegistry(apiKey="5ba73408-ea81-459b-abf4-6fedd8cb8ec6")  # dany
 #er = ER.EventRegistry(apiKey = "5fed3642-762a-4abc-aabf-ac6213c1bcea")  #philipp
 er = ER.EventRegistry(apiKey="dfa0a9e9-a9d7-497f-acab-54d08234bf88") # von wem?
 analytics = ER.Analytics(er)
 
 # DEFINE companies
-companies = ['Samsung']#, 'BASF', 'Apple', 'Tesla', 'Airbus', 'Bayer', 'BMW', 'Telefonica', 'Google', 'Allianz', 'Total']
+companies = ['Samsung', 'BASF', 'Apple', 'Tesla', 'Airbus', 'Bayer', 'BMW', 'Telefonica', 'Google', 'Allianz', 'Total']
 # DEFINE start and end date
 startDate = datetime.date(2018, 4, 1)
 endDate = datetime.date(2018, 4, 30)
@@ -30,22 +30,19 @@ for company in companies:
     print("- Starting article processing for company :", company)
     # QUERY articles related to current company
     q = ER.QueryArticlesIter(conceptUri=er.getConceptUri(company), lang="eng", dateStart=startDate, dateEnd=endDate)
-    # q.addRequestedResult(RequestArticlesInfo(
-    #     returnInfo=ReturnInfo(
-    #         articleInfo=ArticleInfoFlags(socialScore=True))))
-    articles = q.execQuery(er,
-              lang=["eng"],
-              sortBy="date",
-              returnInfo=ReturnInfo(articleInfo=ArticleInfoFlags(socialScore = True)),
+
+    articles = q.execQuery(er, sortBy=["date","sourceImportance"], lang= ["eng"],
+              returnInfo=ReturnInfo(articleInfo=ArticleInfoFlags(socialScore = True, originalArticle=True, categories= True, concepts= True, sentiment=True, duplicateList=True)),
               articleBatchSize=50)
+    print(articles)
 
     # Init Company Sentiment DF
     # Each day equals one column --> All sentiments of one day in one column
     sentiment_df = pd.DataFrame(index=range(0, 2000), columns=pd.date_range(startDate, endDate).format("%Y-%m-%d")[1:])
     sentiment_ibm_df = pd.DataFrame(index=range(0, 7), columns=pd.date_range(startDate, endDate).format("%Y-%m-%d")[1:])
     sentiment_ibm_df.fillna(value=0, inplace=True)
-    social_df = pd.DataFrame(index=range(0, 2), columns=pd.date_range(startDate, endDate).format("%Y-%m-%d")[1:])
-    social_df.fillna(value=0, inplace=True)
+    #social_df = pd.DataFrame(index=range(0, 2), columns=pd.date_range(startDate, endDate).format("%Y-%m-%d")[1:])
+    #social_df.fillna(value=0, inplace=True)
 
     # INITIALIZE local variables
     ibm_sentiment = 0
@@ -74,8 +71,10 @@ for company in companies:
         # Count Occurences of word "Stock" in article
         if 'stock' in article['body']:
             stock_occurences += 1
-        print(article['shares'])
 
+        print(article)
+
+        #print(article['shares'])
         #SOCIAL SHARE
         #social_value = article['shares'] #'facebook': int, 'pinterest': int etc
         #social_df[article['date']] += feature_socialscore.getSocialScore(social_value)
