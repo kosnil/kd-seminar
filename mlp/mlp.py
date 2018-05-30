@@ -1,27 +1,34 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
+import seaborn as sns
 
 from keras.models import Sequential
-from keras.layers import Dense, Activation
-from keras.losses import binary_crossentropy
-from keras.optimizers import SGD
+from keras.layers import Dense
 
 from sklearn.model_selection import train_test_split
-
 from sklearn.metrics import confusion_matrix, precision_score, recall_score, f1_score, cohen_kappa_score
+from sklearn.preprocessing import StandardScaler
 
-# TODO - split data into train and test data
-# TODO - verify, one network for all companies? - or each company one network?
+# TODO - k-fold cross-validation
+# TODO - one network for all companies? - or each company one network?
 
 # fix random seed for reproducibility
 np.random.seed(7)
 
 # read in data
 dataset = pd.read_csv("final_data/complete_data.csv")
+dataset = dataset.drop(columns=['Unnamed: 0'])
 dataset.head()
 
-# define input vector
+### VISUALIZATION ###
+corr = dataset.corr()
+sns.heatmap(corr,
+            xticklabels=corr.columns.values,
+            yticklabels=corr.columns.values)
+plt.show()
+
+### INPUT ###
 X_train = dataset[[ 'articleCount', 'avgSentiment','stdSentiment',
                     '25quantileSentiment', '50quantileSentiment', '75quantileSentiment',
                     'maxSentiment', 'minSentiment', 'Previous_Day_Return']]
@@ -33,7 +40,7 @@ X_train['avgSentiment'].plot(label='AVG Sentiment')
 plt.legend()
 plt.show()
 
-# define output vector
+### OUTPUT ###
 dataset['Next_Day_Return_Sign'] = np.where(dataset['Next_Day_Return'] >= 0, 1, 0)
 Y_train                         = dataset[['Next_Day_Return_Sign']]
 
@@ -44,21 +51,33 @@ plt.show()
 
 X_train, X_test, y_train, y_test = train_test_split(X_train, Y_train, test_size=0.33, random_state=42)
 
-### CREATE MODEL ###
+### PREPROCESS DATA ###
+
+# Define the scaler
+scaler = StandardScaler().fit(X_train)
+
+X_train = scaler.transform(X_train)
+X_test = scaler.transform(X_test)
+y_train = scaler.transform(y_train)
+y_test = scaler.transform(y_test)
+
+### MODEL ###
 
 model = Sequential()
 
 # Add layers
-model.add(Dense(9, input_dim=9, kernel_initializer='uniform', activation=Activation.relu))
-model.add(Dense(1, kernel_initializer='uniform', activation=Activation.sigmoid))
+model.add(Dense(9, input_dim=9, kernel_initializer='uniform', activation='relu'))
+model.add(Dense(9, kernel_initializer='uniform', activation='relu'))
+model.add(Dense(5, kernel_initializer='uniform', activation='relu'))
+model.add(Dense(1, kernel_initializer='uniform', activation='sigmoid'))
 
-model.compile(loss=binary_crossentropy,
-              optimizer=SGD,
+model.compile(loss='binary_crossentropy',
+              optimizer='SGD',
               metrics=['accuracy']) # Accuracy performance metric
 
 hist = model.fit(X_train, y_train,
-                 epochs=100,
-                 batch_size=30,
+                 epochs=200,
+                 batch_size=20,
                  verbose=2,
                  validation_data=(X_test, y_test))
 
@@ -66,13 +85,12 @@ hist = model.fit(X_train, y_train,
 y_pred = model.predict(X_test)
 y_head = np.round(y_pred, 0)
 
-### EVALUATE Classification - MODEL ###
+### EVALUATE MODEL ###
 
 score = model.evaluate(X_test, y_test,verbose=1)
 
 # loss
-print("\n%s: %.2f%%" % (model.metrics_names[0], score[0]*100))
-
+print("\n%s: %.2f" % (model.metrics_names[0], score[0]))
 # accuracy
 print("\n%s: %.2f%%" % (model.metrics_names[1], score[1]*100))
 

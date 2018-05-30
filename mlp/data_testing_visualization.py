@@ -3,11 +3,10 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 import pandas as pd
 import statsmodels.api as sm
-from sklearn.model_selection import train_test_split
 
 '''
 Determine Input-Vector
-- to define input-vector demonstrate significant linear relationship between Input and Output
+- to define an input-vector we need to demonstrate significant linear relationship between Input and Output
 - necessary to show, because input needs information about output
 - want to maximize the input information, 
     - no random information 
@@ -20,7 +19,7 @@ dataset     = pd.read_csv("final_data/complete_data.csv")
 dataset     = dataset.drop(columns=['Unnamed: 0'])
 dataset.head()
 
-# companies
+# get unique companies
 companies   = dataset.ID.unique()
 
 for i in range(0, len(companies)):
@@ -40,9 +39,6 @@ for i in range(0, len(companies)):
     # define output vector
     Y_train = company[['Next_Day_Return']]
 
-    # Split the data up in train and test sets
-    X_train, X_test, y_train, y_test = train_test_split(X_train, Y_train, test_size=0.33, random_state=42)
-
     plt.figure('Company: %s' % companies[i])
     plt.subplot(211).set_title('Input-Data')
     # subplot 1
@@ -55,7 +51,10 @@ for i in range(0, len(companies)):
     plt.plot(X_train['maxSentiment'], label='Max Sentiment')
     plt.plot(X_train['minSentiment'], label='Min Sentiment')
     plt.plot(Y_train['Next_Day_Return'], label='Next_Day_Return')
+    plt.xlabel('Time t')
+    plt.ylabel('Values')
     plt.legend()
+    plt.show()
 
     ### Test for linear relationship
     Y = Y_train['Next_Day_Return']
@@ -67,7 +66,7 @@ for i in range(0, len(companies)):
     print("# -- Next-Day Return and avgSentiment --- ")
     print("ß0 ", results_Previous_Day_Return.params[0])
     print("ß1 ", results_Previous_Day_Return.params[1])
-    print("t-value ", results_Previous_Day_Return.results.pvalues)
+    print("t-value ", results_Previous_Day_Return.pvalues)
     print("r^2 ", results_Previous_Day_Return.rsquared)
     print("# ------------------------------------------")
 
@@ -97,7 +96,14 @@ for i in range(0, len(companies)):
 
     # subplot 2
     # calculate correlation: how strong is this linear relationship?
-    # calculate covariance: is there a linear relationship?
+    # calculate covariance: linear relationship in which direction?
+
+    cov_ndR_Ac = np.cov(np.matrix(Y_train['Next_Day_Return']), np.matrix(X_train['articleCount']))
+    corr_ndR_Ac = np.corrcoef(np.matrix(Y_train['Next_Day_Return']), np.matrix(X_train['articleCount']))
+    print("# -- Next-Day Return and articleCount --- ")
+    print("Covariance: \n", cov_ndR_Ac)
+    print("Correlation: \n", corr_ndR_Ac)
+    print("# ------------------------------------------")
 
     cov_ndR_pdR     = np.cov(np.matrix(Y_train['Next_Day_Return']), np.matrix(X_train['Previous_Day_Return']))
     corr_ndR_pdR    = np.corrcoef(np.matrix(Y_train['Next_Day_Return']), np.matrix(X_train['Previous_Day_Return']))
@@ -158,8 +164,8 @@ for i in range(0, len(companies)):
     plt_stdS = plt.scatter(Y_train['Next_Day_Return'], X_train['stdSentiment'], color=colors[2])
     plt_maxS = plt.scatter(Y_train['Next_Day_Return'], X_train['maxSentiment'], color=colors[3])
     plt_minS = plt.scatter(Y_train['Next_Day_Return'], X_train['minSentiment'], color=colors[4])
-    plt.xlabel('petal length [cm]')
-    plt.ylabel('sepal length [cm]')
+    plt.xlabel('Values')
+    plt.ylabel('Values')
     plt.legend((plt_pdR, plt_avgS, plt_stdS, plt_maxS, plt_minS),
                ('Previous_Day_Return', 'avgSentiment', 'stdSentiment', 'maxSentiment', 'minSentiment'),
                scatterpoints=1,
@@ -172,34 +178,12 @@ for i in range(0, len(companies)):
     # separate scatter plot for article count, otherwise y-axis scale is too inaccurate
     plt.figure()
     plt.plot(X_plot, X_plot * results_articleCount.params[1] + results_articleCount.params[0])
-    plt_artC = plt.scatter(Y_train['Next_Day_Return'], X_train['articleCount'], color=colors[4])
-    plt.legend((plt_artC),
-               ('articleCount'),
-               scatterpoints=1,
-               loc='lower left',
-               ncol=1,
-               fontsize=8)
+    plt_artC = plt.scatter(Y_train['Next_Day_Return'], X_train['articleCount'], color='r')
+    plt.show()
 
+    plt.figure()
+    plt.scatter(Y_train['Next_Day_Return'], X_train['articleCount'], color=colors[1])
     plt.show()
 
     plt.plot(X_train['articleCount'], label='AVG Sentiment')
 
-    fig, ax = plt.subplots(1, 2, figsize=(8, 4))
-
-    ax[0].scatter(red['quality'], red["sulphates"], color="red")
-    ax[1].scatter(white['quality'], white['sulphates'], color="white", edgecolors="black", lw=0.5)
-
-    ax[0].set_title("Red Wine")
-    ax[1].set_title("White Wine")
-    ax[0].set_xlabel("Quality")
-    ax[1].set_xlabel("Quality")
-    ax[0].set_ylabel("Sulphates")
-    ax[1].set_ylabel("Sulphates")
-    ax[0].set_xlim([0, 10])
-    ax[1].set_xlim([0, 10])
-    ax[0].set_ylim([0, 2.5])
-    ax[1].set_ylim([0, 2.5])
-    fig.subplots_adjust(wspace=0.5)
-    fig.suptitle("Wine Quality by Amount of Sulphates")
-
-    plt.show()
