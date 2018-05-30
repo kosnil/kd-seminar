@@ -6,16 +6,16 @@ import time
 from eventregistry import *
 from er_data import feature_socialscore
 
-#er = ER.EventRegistry(apiKey="5ba73408-ea81-459b-abf4-6fedd8cb8ec6")  # dany
+er = ER.EventRegistry(apiKey="5ba73408-ea81-459b-abf4-6fedd8cb8ec6")  # dany
 #er = ER.EventRegistry(apiKey = "5fed3642-762a-4abc-aabf-ac6213c1bcea")  #philipp
-er = ER.EventRegistry(apiKey="dfa0a9e9-a9d7-497f-acab-54d08234bf88") # von wem?
+#er = ER.EventRegistry(apiKey="dfa0a9e9-a9d7-497f-acab-54d08234bf88") # von wem? Hendrik?
 analytics = ER.Analytics(er)
 
 # DEFINE companies
 companies = ['Samsung', 'BASF', 'Apple', 'Tesla', 'Airbus', 'Bayer', 'BMW', 'Telefonica', 'Google', 'Allianz', 'Total']
 # DEFINE start and end date
-startDate = datetime.date(2018, 4, 1)
-endDate = datetime.date(2018, 4, 30)
+startDate = datetime.date(2018, 5, 20)
+endDate = datetime.date(2018, 5, 30)
 
 # DEFINE df results columns
 columns = ['Timestamp', "ID", "articleCount", "avgSentiment", "stdSentiment", "25quantileSentiment",
@@ -31,10 +31,10 @@ for company in companies:
     # QUERY articles related to current company
     q = ER.QueryArticlesIter(conceptUri=er.getConceptUri(company), lang="eng", dateStart=startDate, dateEnd=endDate)
 
-    articles = q.execQuery(er, sortBy=["date","sourceImportance"], lang= ["eng"],
+    articles = q.execQuery(er, sortBy=["date","sourceImportance"], lang= ["eng"], #sortBy=["date","sourceImportance"]
               returnInfo=ReturnInfo(articleInfo=ArticleInfoFlags(socialScore = True, originalArticle=True, categories= True, concepts= True, sentiment=True, duplicateList=True)),
               articleBatchSize=50)
-    print(articles)
+    #print(articles)
 
     # Init Company Sentiment DF
     # Each day equals one column --> All sentiments of one day in one column
@@ -47,6 +47,7 @@ for company in companies:
     # INITIALIZE local variables
     ibm_sentiment = 0
     article_count = 0
+    social_value = 0
     stock_occurences = 0
     index = 0
     date = pd.date_range(startDate, endDate).format("%Y-%m-%d")[len(pd.date_range(startDate, endDate))]
@@ -72,11 +73,15 @@ for company in companies:
         if 'stock' in article['body']:
             stock_occurences += 1
 
-        print(article)
+        #print(article)
 
         #print(article['shares'])
-        #SOCIAL SHARE
-        #social_value = article['shares'] #'facebook': int, 'pinterest': int etc
+
+
+        #SOCIAL SHARE - right now just the sum of all article-shares through all social nets
+
+        if bool(article['shares'].values()):
+            social_value = sum(article['shares'].values()) #'facebook': int, 'pinterest': int etc
         #social_df[article['date']] += feature_socialscore.getSocialScore(social_value)
         #print(social_df)
 
@@ -90,8 +95,8 @@ for company in companies:
         date = article['date']
 
         # Sentiment ibm
-        ibm_time = time.time()
-        sentiment_ibm_df[article['date']] += tone_ibm.getSentiment(article['body'])
+        #ibm_time = time.time()
+        #sentiment_ibm_df[article['date']] += tone_ibm.getSentiment(article['body'])
         #print("IBM TIME: " , time.time() - ibm_time)
         #print("Article TIME: ", time.time() - article_time)
 
@@ -107,17 +112,18 @@ for company in companies:
         results.iloc[result_index]['75quantileSentiment'] = sentiment_df[day].quantile(0.75)
         results.iloc[result_index]['maxSentiment'] = sentiment_df[day].min()
         results.iloc[result_index]['minSentiment'] = sentiment_df[day].max()
+        results.iloc[result_index]["socialScore"] = social_value
         #ibm
-        results.iloc[result_index]['ibm_articleCount'] = sentiment_ibm_df[day].sum()
+        #results.iloc[result_index]['ibm_articleCount'] = sentiment_ibm_df[day].sum()
 
-        if results.iloc[result_index]['ibm_articleCount'] > 0:
-            results.iloc[result_index]['sadness_count'] = sentiment_ibm_df[day].iloc[0]/results.iloc[result_index]['ibm_articleCount']
-            results.iloc[result_index]['anger_count'] = sentiment_ibm_df[day].iloc[1]/results.iloc[result_index]['ibm_articleCount']
-            results.iloc[result_index]['fear_count'] = sentiment_ibm_df[day].iloc[2]/results.iloc[result_index]['ibm_articleCount']
-            results.iloc[result_index]['joy_count'] = sentiment_ibm_df[day].iloc[3]/results.iloc[result_index]['ibm_articleCount']
-            results.iloc[result_index]['analytical_count'] = sentiment_ibm_df[day].iloc[4]/results.iloc[result_index]['ibm_articleCount']
-            results.iloc[result_index]['confident_count'] = sentiment_ibm_df[day].iloc[5]/results.iloc[result_index]['ibm_articleCount']
-            results.iloc[result_index]['tentative_count'] = sentiment_ibm_df[day].iloc[6]/results.iloc[result_index]['ibm_articleCount']
+        # if results.iloc[result_index]['ibm_articleCount'] > 0:
+        #     results.iloc[result_index]['sadness_count'] = sentiment_ibm_df[day].iloc[0]/results.iloc[result_index]['ibm_articleCount']
+        #     results.iloc[result_index]['anger_count'] = sentiment_ibm_df[day].iloc[1]/results.iloc[result_index]['ibm_articleCount']
+        #     results.iloc[result_index]['fear_count'] = sentiment_ibm_df[day].iloc[2]/results.iloc[result_index]['ibm_articleCount']
+        #     results.iloc[result_index]['joy_count'] = sentiment_ibm_df[day].iloc[3]/results.iloc[result_index]['ibm_articleCount']
+        #     results.iloc[result_index]['analytical_count'] = sentiment_ibm_df[day].iloc[4]/results.iloc[result_index]['ibm_articleCount']
+        #     results.iloc[result_index]['confident_count'] = sentiment_ibm_df[day].iloc[5]/results.iloc[result_index]['ibm_articleCount']
+        #     results.iloc[result_index]['tentative_count'] = sentiment_ibm_df[day].iloc[6]/results.iloc[result_index]['ibm_articleCount']
 
         result_index += 1
 
