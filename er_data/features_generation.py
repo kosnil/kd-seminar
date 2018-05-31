@@ -4,18 +4,18 @@ import pandas as pd
 from ibm import tone_ibm
 import time
 from eventregistry import *
-from er_data import feature_socialscore
 
 er = ER.EventRegistry(apiKey="5ba73408-ea81-459b-abf4-6fedd8cb8ec6")  # dany
 #er = ER.EventRegistry(apiKey = "5fed3642-762a-4abc-aabf-ac6213c1bcea")  #philipp
+#er = ER.EventRegistry(apiKey = "7571801b-6710-4166-90cc-9c5352ddeedd")  #andi
 #er = ER.EventRegistry(apiKey="dfa0a9e9-a9d7-497f-acab-54d08234bf88") # von wem? Hendrik?
 analytics = ER.Analytics(er)
 
 # DEFINE companies
 companies = ['Samsung', 'BASF', 'Apple', 'Tesla', 'Airbus', 'Bayer', 'BMW', 'Telefonica', 'Google', 'Allianz', 'Total']
 # DEFINE start and end date
-startDate = datetime.date(2018, 5, 20)
-endDate = datetime.date(2018, 5, 30)
+startDate = datetime.date(2018, 5, 31)
+endDate = datetime.date(2018, 5, 31)
 
 # DEFINE df results columns
 columns = ['Timestamp', "ID", "articleCount", "avgSentiment", "stdSentiment", "25quantileSentiment",
@@ -31,7 +31,7 @@ for company in companies:
     # QUERY articles related to current company
     q = ER.QueryArticlesIter(conceptUri=er.getConceptUri(company), lang="eng", dateStart=startDate, dateEnd=endDate)
 
-    articles = q.execQuery(er, sortBy=["date","sourceImportance"], lang= ["eng"], #sortBy=["date","sourceImportance"]
+    articles = q.execQuery(er, sortBy=["date","sourceImportance"], sortByAsc=False, lang= ["eng"],
               returnInfo=ReturnInfo(articleInfo=ArticleInfoFlags(socialScore = True, originalArticle=True, categories= True, concepts= True, sentiment=True, duplicateList=True)),
               articleBatchSize=50)
     #print(articles)
@@ -41,8 +41,10 @@ for company in companies:
     sentiment_df = pd.DataFrame(index=range(0, 2000), columns=pd.date_range(startDate, endDate).format("%Y-%m-%d")[1:])
     sentiment_ibm_df = pd.DataFrame(index=range(0, 7), columns=pd.date_range(startDate, endDate).format("%Y-%m-%d")[1:])
     sentiment_ibm_df.fillna(value=0, inplace=True)
-    #social_df = pd.DataFrame(index=range(0, 2), columns=pd.date_range(startDate, endDate).format("%Y-%m-%d")[1:])
-    #social_df.fillna(value=0, inplace=True)
+    social_df = pd.DataFrame(index=range(0, 1), columns=pd.date_range(startDate, endDate).format("%Y-%m-%d")[1:])
+    social_df.fillna(value=0, inplace=True)
+    duplicate_df = pd.DataFrame(index=range(0, 1), columns=pd.date_range(startDate, endDate).format("%Y-%m-%d")[1:])
+    duplicate_df.fillna(value=0, inplace=True)
 
     # INITIALIZE local variables
     ibm_sentiment = 0
@@ -54,7 +56,7 @@ for company in companies:
     print("-- Start  prcessing day : ", date)
     # Iterate over all articles about the current company
     # Calculate Sentiment and save in day`s column and index
-    while True:
+    while True
         try:
             article_time = time.time()
             article = next(articles)
@@ -68,21 +70,19 @@ for company in companies:
             index = 0
             print("-- Day fully processed : ", date)
 
+        print(article)
+
         # Calculate text feature
         # Count Occurences of word "Stock" in article
         if 'stock' in article['body']:
             stock_occurences += 1
 
-        #print(article)
-
-        #print(article['shares'])
-
+        #duplicateList
+        duplicate_df[article['date']] += len(article['duplicateList'])
 
         #SOCIAL SHARE - right now just the sum of all article-shares through all social nets
-
         if bool(article['shares'].values()):
-            social_value = sum(article['shares'].values()) #'facebook': int, 'pinterest': int etc
-        #social_df[article['date']] += feature_socialscore.getSocialScore(social_value)
+            social_df[article['date']] += sum(article['shares'].values())
         #print(social_df)
 
         # SENTIMENT
@@ -112,7 +112,8 @@ for company in companies:
         results.iloc[result_index]['75quantileSentiment'] = sentiment_df[day].quantile(0.75)
         results.iloc[result_index]['maxSentiment'] = sentiment_df[day].min()
         results.iloc[result_index]['minSentiment'] = sentiment_df[day].max()
-        results.iloc[result_index]["socialScore"] = social_value
+        results.iloc[result_index]["socialScore"] = social_df[day]
+        results.iloc[result_index]['nbOfDuplicates'] = duplicate_df[day]
         #ibm
         #results.iloc[result_index]['ibm_articleCount'] = sentiment_ibm_df[day].sum()
 
