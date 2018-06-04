@@ -30,8 +30,8 @@ for company in companies:
 # For Checking purposes
 #df.loc[df.ID=='Apple',['Timestamp','Previous_Day_Return','Apple','Next_Day_Return']]
 
-df = df.drop(companies,axis=1)
-df = df.dropna()
+df = df.drop(columns=companies,axis=1)
+#df = df.dropna()
 
 print("-- Export Datasets")
 df.to_csv("final_data/complete_data.csv", sep=",", header=True)
