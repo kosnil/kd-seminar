@@ -1,0 +1,5 @@
+,Timestamp,ID,articleCount,avgSentiment,stdSentiment,25quantileSentiment,50quantileSentiment,75quantileSentiment,maxSentiment,minSentiment,ibm_articleCount,sadness_count,anger_count,fear_count,joy_count,analytical_count,confident_count,tentative_count
+0,2018-05-30,Samsung,0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0,0,0,0,0,0,0,0
+1,2018-05-31,Samsung,2,0.26754,0.26481148955436207,0.17391500000000001,0.26754,0.361165,0.08029,0.45479,0,0,0,0,0,0,0,0
+2,2018-05-30,BASF,0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0,0,0,0,0,0,0,0
+3,2018-05-31,BASF,2,0.19605875,0.1307139918031922,0.149844375,0.19605875,0.242273125,0.10363,0.2884875,0,0,0,0,0,0,0,0
