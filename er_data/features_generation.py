@@ -8,19 +8,19 @@ from eventregistry import *
 er = ER.EventRegistry(apiKey="5ba73408-ea81-459b-abf4-6fedd8cb8ec6")  # dany
 #er = ER.EventRegistry(apiKey = "5fed3642-762a-4abc-aabf-ac6213c1bcea")  #philipp
 #er = ER.EventRegistry(apiKey = "7571801b-6710-4166-90cc-9c5352ddeedd")  #andi
-#er = ER.EventRegistry(apiKey="dfa0a9e9-a9d7-497f-acab-54d08234bf88") # von wem? Hendrik?
+#er = ER.EventRegistry(apiKey="dfa0a9e9-a9d7-497f-acab-54d08234bf88") #  Hendrik?
 analytics = ER.Analytics(er)
 
 # DEFINE companies
 companies = ['Samsung', 'BASF', 'Apple', 'Tesla', 'Airbus', 'Bayer', 'BMW', 'Telefonica', 'Google', 'Allianz', 'Total']
 # DEFINE start and end date
-startDate = datetime.date(2018, 5, 31)
-endDate = datetime.date(2018, 5, 31)
+startDate = datetime.date(2018, 4, 1)
+endDate = datetime.date(2018, 4, 30)
 
 # DEFINE df results columns
+
 columns = ['Timestamp', "ID", "articleCount", "avgSentiment", "stdSentiment", "25quantileSentiment",
-           "50quantileSentiment", "75quantileSentiment", "maxSentiment", "minSentiment","ibm_articleCount", "sadness_count", "anger_count",
-           "fear_count", "joy_count", "analytical_count", "confident_count", "tentative_count"]
+           "50quantileSentiment", "75quantileSentiment", "maxSentiment", "minSentiment","socialScore","nbOfDuplicates"]
 results = pd.DataFrame(index=range(0, pd.date_range(startDate, endDate).shape[0] * len(companies)), columns=columns)
 #results.fillna(value=0,inplace=True)
 result_index = 0
@@ -56,7 +56,7 @@ for company in companies:
     print("-- Start  prcessing day : ", date)
     # Iterate over all articles about the current company
     # Calculate Sentiment and save in day`s column and index
-    while True
+    while True:
         try:
             article_time = time.time()
             article = next(articles)
@@ -134,7 +134,7 @@ results.fillna(value=0, inplace=True)
 print(" - All Articles fully processed")
 results['Timestamp'] = pd.to_datetime(results['Timestamp'], format="%Y-%m-%d")
 print(" - Save Data to csv")
-PATH = "data/sentiment_features_" + str(startDate) + "_" + str(endDate) + ".csv"
+PATH = "er_data/data/sentiment_features_" + str(startDate) + "_" + str(endDate) + ".csv"
 results.to_csv(PATH, sep=",", header=True)
 
 ##Faster approach. However sentiment is always 'None'. returnInfo needs to be understood better
