@@ -13,86 +13,89 @@ analytics = ER.Analytics(er)
 
 # DEFINE companies
 companies = ['Samsung', 'BASF', 'Apple', 'Tesla', 'Airbus', 'Bayer', 'BMW', 'Telefonica', 'Google', 'Allianz', 'Total']
+#companies =['Samsung']
 # DEFINE start and end date
-startDate = datetime.date(2018, 4, 1)
-endDate = datetime.date(2018, 4, 30)
+startDate = datetime.date(2018, 6, 1)
+endDate = datetime.date(2018, 6, 6)
+# Get all Business Days in Period
+time_frame = pd.bdate_range(startDate,endDate)
 
 # DEFINE df results columns
 
 columns = ['Timestamp', "ID", "articleCount", "avgSentiment", "stdSentiment", "25quantileSentiment",
            "50quantileSentiment", "75quantileSentiment", "maxSentiment", "minSentiment","socialScore","nbOfDuplicates"]
-results = pd.DataFrame(index=range(0, pd.date_range(startDate, endDate).shape[0] * len(companies)), columns=columns)
-#results.fillna(value=0,inplace=True)
+results = pd.DataFrame(index=range(0,time_frame.shape[0] * len(companies)), columns=columns)
 result_index = 0
 
+
+# Set maximum number of articles per day
+number_of_articles = 200
+
 for company in companies:
-
     print("- Starting article processing for company :", company)
-    # QUERY articles related to current company
-    q = ER.QueryArticlesIter(conceptUri=er.getConceptUri(company), lang="eng", dateStart=startDate, dateEnd=endDate)
-
-    articles = q.execQuery(er, sortBy=["date","sourceImportance"], sortByAsc=False, lang= ["eng"],
-              returnInfo=ReturnInfo(articleInfo=ArticleInfoFlags(socialScore = True, originalArticle=True, categories= True, concepts= True, sentiment=True, duplicateList=True)),
-              articleBatchSize=50)
-    #print(articles)
 
     # Init Company Sentiment DF
     # Each day equals one column --> All sentiments of one day in one column
-    sentiment_df = pd.DataFrame(index=range(0, 2000), columns=pd.date_range(startDate, endDate).format("%Y-%m-%d")[1:])
-    sentiment_ibm_df = pd.DataFrame(index=range(0, 7), columns=pd.date_range(startDate, endDate).format("%Y-%m-%d")[1:])
+    sentiment_df = pd.DataFrame(index=range(0, number_of_articles), columns=time_frame)
+
+    sentiment_ibm_df = pd.DataFrame(index=range(0, 7), columns=time_frame)
     sentiment_ibm_df.fillna(value=0, inplace=True)
-    social_df = pd.DataFrame(index=range(0, 1), columns=pd.date_range(startDate, endDate).format("%Y-%m-%d")[1:])
+
+    social_df = pd.DataFrame(index=range(0, 1), columns=time_frame)
     social_df.fillna(value=0, inplace=True)
-    duplicate_df = pd.DataFrame(index=range(0, 1), columns=pd.date_range(startDate, endDate).format("%Y-%m-%d")[1:])
+
+    duplicate_df = pd.DataFrame(index=range(0, 1), columns=time_frame)
     duplicate_df.fillna(value=0, inplace=True)
 
-    # INITIALIZE local variables
-    ibm_sentiment = 0
-    article_count = 0
-    social_value = 0
-    stock_occurences = 0
-    index = 0
-    date = pd.date_range(startDate, endDate).format("%Y-%m-%d")[len(pd.date_range(startDate, endDate))]
-    print("-- Start  prcessing day : ", date)
+
+    for day in time_frame:
+    # QUERY articles related to current company
+        print("-- Start article processing for Date: ", day)
+        q = ER.QueryArticlesIter(conceptUri=er.getConceptUri(company), lang="eng", dateStart=day.date(), dateEnd=day.date())
+        articles = q.execQuery(er, sortBy=["date","sourceImportance"], sortByAsc=False, lang= ["eng"],
+              returnInfo=ReturnInfo(articleInfo=ArticleInfoFlags(socialScore = True, originalArticle=True, categories= True, concepts= True, sentiment=True, duplicateList=True)),
+              maxItems=number_of_articles,articleBatchSize=50)
+
+
+
+
+        # INITIALIZE local variables
+        ibm_sentiment = 0
+        article_count = 0
+        social_value = 0
+        stock_occurences = 0
+        index = 0
+
     # Iterate over all articles about the current company
     # Calculate Sentiment and save in day`s column and index
-    while True:
-        try:
-            article_time = time.time()
-            article = next(articles)
-        except AssertionError:
-            print("Article throws assertion error!")
-            continue
-        except StopIteration:
-            break
+        index = 0
+        while True:
+            try:
+                article = next(articles)
+            except AssertionError:
+                print("Article throws assertion error!")
+                continue
+            except StopIteration:
+                break
 
-        if date != article['date']:
-            index = 0
-            print("-- Day fully processed : ", date)
+            # Calculate text feature
+            # Count Occurences of word "Stock" in article
+            if 'stock' in article['body']:
+                stock_occurences += 1
 
-        print(article)
+            #duplicateList
+            duplicate_df[day] += len(article['duplicateList'])
 
-        # Calculate text feature
-        # Count Occurences of word "Stock" in article
-        if 'stock' in article['body']:
-            stock_occurences += 1
+            #SOCIAL SHARE - right now just the sum of all article-shares through all social nets
+            if bool(article['shares'].values()):
+                social_df[day] += sum(article['shares'].values())
+            #print(social_df)
 
-        #duplicateList
-        duplicate_df[article['date']] += len(article['duplicateList'])
-
-        #SOCIAL SHARE - right now just the sum of all article-shares through all social nets
-        if bool(article['shares'].values()):
-            social_df[article['date']] += sum(article['shares'].values())
-        #print(social_df)
-
-        # SENTIMENT
-        # calculating sentiment value from 'article body'
-        er_time = time.time()
-        sentiment_value = analytics.sentiment(article['body'])['avgSent']
-        sentiment_df[article['date']][index] = sentiment_value
-        #print("ER TIME: " , time.time() - er_time)
-        index += 1
-        date = article['date']
+            # SENTIMENT
+            # calculating sentiment value from 'article body'
+            sentiment_value = analytics.sentiment(article['body'])['avgSent']
+            sentiment_df[day][index] = sentiment_value
+            index += 1
 
         # Sentiment ibm
         #ibm_time = time.time()
@@ -102,7 +105,7 @@ for company in companies:
 
     # Fill in the resulting df from sentiment_df
     for day in sentiment_df.columns:
-        results.iloc[result_index]['Timestamp'] = str(day)
+        results.iloc[result_index]['Timestamp'] = day.strftime("%Y-%m-%d")
         results.iloc[result_index]['ID'] = company
         results.iloc[result_index]['articleCount'] = sentiment_df[day].count()
         results.iloc[result_index]['avgSentiment'] = sentiment_df[day].mean()
@@ -112,8 +115,8 @@ for company in companies:
         results.iloc[result_index]['75quantileSentiment'] = sentiment_df[day].quantile(0.75)
         results.iloc[result_index]['maxSentiment'] = sentiment_df[day].min()
         results.iloc[result_index]['minSentiment'] = sentiment_df[day].max()
-        results.iloc[result_index]["socialScore"] = social_df[day]
-        results.iloc[result_index]['nbOfDuplicates'] = duplicate_df[day]
+        results.iloc[result_index]["socialScore"] = social_df[day].values[0]
+        results.iloc[result_index]['nbOfDuplicates'] = duplicate_df[day].values[0]
         #ibm
         #results.iloc[result_index]['ibm_articleCount'] = sentiment_ibm_df[day].sum()
 
