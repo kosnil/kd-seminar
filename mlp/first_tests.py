@@ -10,7 +10,7 @@ import os
 wd = os.getcwd()
 print(wd)
 
-df = pd.read_csv("complete_data_0906.csv")
+df = pd.read_csv("complete_data.csv")
 df.head()
 
 # dims = X_train.shape[1]
