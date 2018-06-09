@@ -15,7 +15,7 @@ Determine Input-Vector
 '''
 
 # read in data
-dataset     = pd.read_csv("final_data/complete_data.csv")
+dataset     = pd.read_csv("final_data/complete_data_0906.csv")
 dataset     = dataset.drop(columns=['Unnamed: 0'])
 dataset.head()
 
