@@ -6,30 +6,30 @@ import time
 from eventregistry import *
 
 er = ER.EventRegistry(apiKey="5ba73408-ea81-459b-abf4-6fedd8cb8ec6")  # dany
-#er = ER.EventRegistry(apiKey = "5fed3642-762a-4abc-aabf-ac6213c1bcea")  #philipp
-#er = ER.EventRegistry(apiKey = "7571801b-6710-4166-90cc-9c5352ddeedd")  #andi
-#er = ER.EventRegistry(apiKey="dfa0a9e9-a9d7-497f-acab-54d08234bf88") #  Hendrik?
+# er = ER.EventRegistry(apiKey = "5fed3642-762a-4abc-aabf-ac6213c1bcea")  #philipp
+# er = ER.EventRegistry(apiKey = "7571801b-6710-4166-90cc-9c5352ddeedd")  #andi
+# er = ER.EventRegistry(apiKey="dfa0a9e9-a9d7-497f-acab-54d08234bf88") #  Hendrik?
 analytics = ER.Analytics(er)
 
 # DEFINE companies
 companies = ['Samsung', 'BASF', 'Apple', 'Tesla', 'Airbus', 'Bayer', 'BMW', 'Telefonica', 'Google', 'Allianz', 'Total']
-#companies =['Samsung']
+# companies =['Samsung']
 # DEFINE start and end date
-startDate = datetime.date(2018, 6, 1)
-endDate = datetime.date(2018, 6, 6)
+startDate = datetime.date(2017, 6, 1)
+endDate = datetime.date(2017, 7, 1)
 # Get all Business Days in Period
-time_frame = pd.bdate_range(startDate,endDate)
+time_frame = pd.bdate_range(startDate, endDate)
 
 # DEFINE df results columns
 
 columns = ['Timestamp', "ID", "articleCount", "avgSentiment", "stdSentiment", "25quantileSentiment",
-           "50quantileSentiment", "75quantileSentiment", "maxSentiment", "minSentiment","socialScore","nbOfDuplicates"]
-results = pd.DataFrame(index=range(0,time_frame.shape[0] * len(companies)), columns=columns)
+           "50quantileSentiment", "75quantileSentiment", "maxSentiment", "minSentiment", "socialScore",
+           "nbOfDuplicates"]
+results = pd.DataFrame(index=range(0, time_frame.shape[0] * len(companies)), columns=columns)
 result_index = 0
 
-
 # Set maximum number of articles per day
-number_of_articles = 200
+number_of_articles = 50
 
 for company in companies:
     print("- Starting article processing for company :", company)
@@ -47,17 +47,16 @@ for company in companies:
     duplicate_df = pd.DataFrame(index=range(0, 1), columns=time_frame)
     duplicate_df.fillna(value=0, inplace=True)
 
-
     for day in time_frame:
-    # QUERY articles related to current company
+        # QUERY articles related to current company
         print("-- Start article processing for Date: ", day)
-        q = ER.QueryArticlesIter(conceptUri=er.getConceptUri(company), lang="eng", dateStart=day.date(), dateEnd=day.date())
-        articles = q.execQuery(er, sortBy=["date","sourceImportance"], sortByAsc=False, lang= ["eng"],
-              returnInfo=ReturnInfo(articleInfo=ArticleInfoFlags(socialScore = True, originalArticle=True, categories= True, concepts= True, sentiment=True, duplicateList=True)),
-              maxItems=number_of_articles,articleBatchSize=50)
-
-
-
+        q = ER.QueryArticlesIter(conceptUri=er.getConceptUri(company), lang="eng", dateStart=day.date(),
+                                 dateEnd=day.date())
+        articles = q.execQuery(er, sortBy=["date", "sourceImportance"], sortByAsc=False, lang=["eng"],
+                               returnInfo=ReturnInfo(
+                                   articleInfo=ArticleInfoFlags(socialScore=True, originalArticle=True, categories=True,
+                                                                concepts=True, sentiment=True, duplicateList=True)),
+                               maxItems=number_of_articles, articleBatchSize=50)
 
         # INITIALIZE local variables
         ibm_sentiment = 0
@@ -66,8 +65,8 @@ for company in companies:
         stock_occurences = 0
         index = 0
 
-    # Iterate over all articles about the current company
-    # Calculate Sentiment and save in day`s column and index
+        # Iterate over all articles about the current company
+        # Calculate Sentiment and save in day`s column and index
         index = 0
         while True:
             try:
@@ -83,13 +82,13 @@ for company in companies:
             if 'stock' in article['body']:
                 stock_occurences += 1
 
-            #duplicateList
+            # duplicateList
             duplicate_df[day] += len(article['duplicateList'])
 
-            #SOCIAL SHARE - right now just the sum of all article-shares through all social nets
+            # SOCIAL SHARE - right now just the sum of all article-shares through all social nets
             if bool(article['shares'].values()):
                 social_df[day] += sum(article['shares'].values())
-            #print(social_df)
+            # print(social_df)
 
             # SENTIMENT
             # calculating sentiment value from 'article body'
@@ -98,10 +97,10 @@ for company in companies:
             index += 1
 
         # Sentiment ibm
-        #ibm_time = time.time()
-        #sentiment_ibm_df[article['date']] += tone_ibm.getSentiment(article['body'])
-        #print("IBM TIME: " , time.time() - ibm_time)
-        #print("Article TIME: ", time.time() - article_time)
+    # ibm_time = time.time()
+    # sentiment_ibm_df[article['date']] += tone_ibm.getSentiment(article['body'])
+    # print("IBM TIME: " , time.time() - ibm_time)
+    # print("Article TIME: ", time.time() - article_time)
 
     # Fill in the resulting df from sentiment_df
     for day in sentiment_df.columns:
@@ -117,8 +116,8 @@ for company in companies:
         results.iloc[result_index]['minSentiment'] = sentiment_df[day].max()
         results.iloc[result_index]["socialScore"] = social_df[day].values[0]
         results.iloc[result_index]['nbOfDuplicates'] = duplicate_df[day].values[0]
-        #ibm
-        #results.iloc[result_index]['ibm_articleCount'] = sentiment_ibm_df[day].sum()
+        # ibm
+        # results.iloc[result_index]['ibm_articleCount'] = sentiment_ibm_df[day].sum()
 
         # if results.iloc[result_index]['ibm_articleCount'] > 0:
         #     results.iloc[result_index]['sadness_count'] = sentiment_ibm_df[day].iloc[0]/results.iloc[result_index]['ibm_articleCount']
@@ -137,7 +136,7 @@ results.fillna(value=0, inplace=True)
 print(" - All Articles fully processed")
 results['Timestamp'] = pd.to_datetime(results['Timestamp'], format="%Y-%m-%d")
 print(" - Save Data to csv")
-PATH = "er_data/data/sentiment_features_" + str(startDate) + "_" + str(endDate) + ".csv"
+PATH = "data/sentiment_features_" + str(startDate) + "_" + str(endDate) + ".csv"
 results.to_csv(PATH, sep=",", header=True)
 
 ##Faster approach. However sentiment is always 'None'. returnInfo needs to be understood better
