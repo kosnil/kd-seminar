@@ -1,110 +1,99 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
-import seaborn as sns
+import keras
 
+from sklearn.preprocessing import MinMaxScaler
+from keras.utils import plot_model
 from keras.models import Sequential
 from keras.layers import Dense
-
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import confusion_matrix, precision_score, recall_score, f1_score, cohen_kappa_score
-from sklearn.preprocessing import StandardScaler
 
 # TODO - k-fold cross-validation
-# TODO - one network for all companies? - or each company one network?
+
+##########################################################
+###     FIRST SETUP: one model for all companies       ###
+##########################################################
+
+keras.__version__
 
 # fix random seed for reproducibility
 np.random.seed(7)
+
+### DATA ###
 
 # read in data
 dataset = pd.read_csv("final_data/complete_data.csv")
 dataset = dataset.drop(columns=['Unnamed: 0'])
 dataset.head()
 
-### VISUALIZATION ###
-corr = dataset.corr()
-sns.heatmap(corr,
-            xticklabels=corr.columns.values,
-            yticklabels=corr.columns.values)
-plt.show()
-
-### INPUT ###
-X_train = dataset[[ 'articleCount', 'avgSentiment','stdSentiment',
-                    '25quantileSentiment', '50quantileSentiment', '75quantileSentiment',
-                    'maxSentiment', 'minSentiment', 'Previous_Day_Return']]
-
-plt.figure()
-plt.title('Input-Data')
-X_train['Previous_Day_Return'].plot(label='Previous-Day Return')
-X_train['avgSentiment'].plot(label='AVG Sentiment')
-plt.legend()
-plt.show()
-
-### OUTPUT ###
+# relabel output, so that we create a classification task
 dataset['Next_Day_Return_Sign'] = np.where(dataset['Next_Day_Return'] >= 0, 1, 0)
-Y_train                         = dataset[['Next_Day_Return_Sign']]
 
-plt.figure()
-plt.title('Next-Day Return')
-Y_train.plot()
-plt.show()
+# define features
+features = [ 'articleCount', 'avgSentiment','stdSentiment',
+             '25quantileSentiment', '50quantileSentiment', '75quantileSentiment',
+             'maxSentiment', 'minSentiment', 'socialScore', 'nbOfDuplicates', 'Previous_Day_Return']
 
-X_train, X_test, y_train, y_test = train_test_split(X_train, Y_train, test_size=0.33, random_state=42)
+# define target variable
+target_var = ['Next_Day_Return_Sign']
 
-### PREPROCESS DATA ###
+# preprocess data
+scaler      = MinMaxScaler(feature_range=(0, 1))
+rescaled    = scaler.fit_transform(dataset[features])
 
-# Define the scaler
-scaler = StandardScaler().fit(X_train)
-
-X_train = scaler.transform(X_train)
-X_test = scaler.transform(X_test)
-y_train = scaler.transform(y_train)
-y_test = scaler.transform(y_test)
+# split data in training and test data
+Y_train                          = dataset[target_var]
+X_train, X_test, y_train, y_test = train_test_split(rescaled, Y_train, test_size=0.33, random_state=42)
 
 ### MODEL ###
-
 model = Sequential()
+model.add(Dense(4, activation='relu', input_dim=11))
+model.add(Dense(7, activation='relu'))
+model.add(Dense(1, activation='sigmoid'))
+model.compile(optimizer='adam',
+              loss='binary_crossentropy',
+              metrics=['accuracy'])
 
-# Add layers
-model.add(Dense(9, input_dim=9, kernel_initializer='uniform', activation='relu'))
-model.add(Dense(9, kernel_initializer='uniform', activation='relu'))
-model.add(Dense(5, kernel_initializer='uniform', activation='relu'))
-model.add(Dense(1, kernel_initializer='uniform', activation='sigmoid'))
+# summarize layers
+model.summary()
 
-model.compile(loss='binary_crossentropy',
-              optimizer='SGD',
-              metrics=['accuracy']) # Accuracy performance metric
-
-hist = model.fit(X_train, y_train,
-                 epochs=200,
-                 batch_size=20,
+history = model.fit(X_train, y_train,
+                 epochs=50,
                  verbose=2,
                  validation_data=(X_test, y_test))
 
-### PREDICTION ###
-y_pred = model.predict(X_test)
-y_head = np.round(y_pred, 0)
+plot_model(model, to_file='mlp/mlp.png', show_shapes=True, show_layer_names=True)
 
-### EVALUATE MODEL ###
-
-score = model.evaluate(X_test, y_test,verbose=1)
+### EVALUATTION ###
+score           = model.evaluate(X_test, y_test,verbose=1)
 
 # loss
 print("\n%s: %.2f" % (model.metrics_names[0], score[0]))
 # accuracy
 print("\n%s: %.2f%%" % (model.metrics_names[1], score[1]*100))
 
-# Confusion matrix
-confusion_matrix(y_test, y_pred)
+# summarize history for accuracy
+plt.plot(history.history['acc'])
+plt.plot(history.history['val_acc'])
+plt.title('model accuracy')
+plt.ylabel('accuracy')
+plt.xlabel('epoch')
+plt.legend(['train', 'test'], loc='upper left')
+plt.show()
 
-# Precision
-precision_score(y_test, y_pred)
+# summarize history for loss
+plt.plot(history.history['loss'])
+plt.plot(history.history['val_loss'])
+plt.title('model loss')
+plt.ylabel('loss')
+plt.xlabel('epoch')
+plt.legend(['train', 'test'], loc='upper left')
+plt.show()
 
-# Recall
-recall_score(y_test, y_pred)
 
-# F1 score
-f1_score(y_test,y_pred)
+### PREDICTION ###
 
-# Cohen's kappa
-cohen_kappa_score(y_test, y_pred)
+ynew = model.predict_classes(X_test)
+for i in range(len(X_test)):
+	print("X=%s, Predicted=%s" % (X_test[i], ynew[i]))
