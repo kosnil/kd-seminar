@@ -17,9 +17,6 @@ from sklearn.model_selection import train_test_split
 
 keras.__version__
 
-# fix random seed for reproducibility
-np.random.seed(7)
-
 ### DATA ###
 
 # read in data
@@ -59,7 +56,7 @@ model.compile(optimizer='adam',
 model.summary()
 
 history = model.fit(X_train, y_train,
-                 epochs=50,
+                 epochs=30,
                  verbose=2,
                  validation_data=(X_test, y_test))
 
@@ -90,7 +87,6 @@ plt.ylabel('loss')
 plt.xlabel('epoch')
 plt.legend(['train', 'test'], loc='upper left')
 plt.show()
-
 
 ### PREDICTION ###
 
