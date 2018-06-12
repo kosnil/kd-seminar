@@ -7,7 +7,12 @@ from sklearn.preprocessing import MinMaxScaler
 from keras.utils import plot_model
 from keras.models import Sequential
 from keras.layers import Dense
+from keras.layers import Dropout
+from keras.wrappers.scikit_learn import KerasClassifier
+
 from sklearn.model_selection import train_test_split
+from sklearn.model_selection import GridSearchCV
+
 
 # TODO - k-fold cross-validation
 
@@ -22,6 +27,8 @@ keras.__version__
 # read in data
 dataset = pd.read_csv("final_data/complete_data.csv")
 dataset = dataset.drop(columns=['Unnamed: 0'])
+classes = dataset.ID.unique()
+nClasses = len(dataset.ID.unique())
 dataset.head()
 
 # relabel output, so that we create a classification task
@@ -44,6 +51,60 @@ Y_train                          = dataset[target_var]
 X_train, X_test, y_train, y_test = train_test_split(rescaled, Y_train, test_size=0.33, random_state=42)
 
 ### MODEL ###
+
+def baseline_model(optimizer = "sgd", dropout=True, dropout_param=0.3, hidden_layer_size=[4,7,1]):
+    model = Sequential()
+    model.add(Dense(hidden_layer_size[0], input_shape=11, activation='relu'))
+    if dropout:
+        model.add(Dropout(dropout_param))
+    model.add(Dense(hidden_layer_size[1], kernel_initializer='normal', activation='relu'))
+    if dropout:
+        model.add(Dropout(dropout_param))
+    model.add(Dense(hidden_layer_size[2], kernel_initializer='normal', activation='sigmoid'))
+    model.add(Dense(nClasses, activation='sigmoid'))
+    model.compile(optimizer=optimizer,
+                  loss='binary_crossentropy',
+                  metrics=['accuracy'])
+
+    model.summary()
+    plot_model(model, to_file='mlp.png', show_shapes=True, show_layer_names=True)
+
+    return model
+
+my_classifier = KerasClassifier(baseline_model, verbose=2)
+
+epochs = [20, 40]
+optimizer = ["sgd", "adam", "nadam"]
+
+dropout_param = [0.1, 0.2]
+param_grid = dict(epochs=epochs, optimizer=optimizer, dropout_param=dropout_param)
+
+validator = GridSearchCV(my_classifier, param_grid=param_grid, n_jobs=1)
+validator.fit(X_train, y_train)
+
+validator.cv_results_.keys()
+validator.grid_scores_
+validator.best_params_
+validator.best_score_
+validator.best_index_
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 model = Sequential()
 model.add(Dense(4, activation='relu', input_dim=11))
 model.add(Dense(7, activation='relu'))

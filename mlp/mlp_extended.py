@@ -17,8 +17,6 @@ from keras.wrappers.scikit_learn import KerasClassifier
 from sklearn.model_selection import KFold
 from sklearn.model_selection import cross_val_score
 
-# TODO - k-fold cross-validation
-
 ##########################################################
 ###     FIRST SETUP: one model for all companies       ###
 ##########################################################
@@ -106,16 +104,18 @@ validator = GridSearchCV(my_classifier, param_grid=param_grid, n_jobs=1)
 validator.fit(X_train, y_train)
 
 validator.cv_results_.keys()
-validator.grid_scores_
 validator.best_params_
 validator.best_score_
 validator.best_index_
 
-model   = baseline_model()
-history = my_classifier.fit(X_train, y_train,
-                     epochs=100,
-                     verbose=2,
-                     validation_data=(X_test, y_test))
+
+model   = baseline_model(dropout_param=validator.best_params_['dropout_param'],
+                         optimizer=validator.best_params_['optimizer'])
+
+history = model.fit(X_train, y_train,
+                    verbose=2,
+                    epochs=validator.best_params_['epochs'],
+                    validation_data=(X_test, y_test))
 
 ###################
 ###  EVALUATION ###
@@ -181,7 +181,9 @@ plt.show()
 ###  K-FOLD ###
 ###################
 
-estimator   = KerasClassifier(build_fn=baseline_model, epochs=10, batch_size=5, verbose=2)
+estimator   = KerasClassifier(build_fn=model,
+                              epochs=validator.best_params_['epochs'],
+                              verbose=2)
 kfold       = KFold(n_splits=10, shuffle=True, random_state=seed)
 results     = cross_val_score(estimator, X, Y, cv=kfold)
 print("Results: %.2f%% (%.2f%%)" % (results.mean()*100, results.std()*100))
