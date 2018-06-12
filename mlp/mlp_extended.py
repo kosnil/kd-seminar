@@ -4,13 +4,20 @@ import pandas as pd
 import keras
 
 from sklearn.preprocessing import MinMaxScaler
+from sklearn.model_selection import GridSearchCV
 from sklearn.model_selection import train_test_split
 
 from keras.utils import plot_model
 from keras.models import Sequential
 
 from keras.layers import Dense
+from keras.layers import Dropout
+
 from keras.layers import LeakyReLU
+
+from keras.wrappers.scikit_learn import KerasClassifier
+from sklearn.model_selection import KFold
+from sklearn.model_selection import cross_val_score
 
 # TODO - k-fold cross-validation
 
@@ -39,7 +46,7 @@ dataset.head()
 dataset['relabeled_returns'] = np.where(dataset['Next_Day_Return'] >= 0, 1, 0)
 dataset.head()
 
-# create Input with date x (features for each company: currently 121) dimenesions
+# create Input with date x (features for each company: currently 121) dimensions
 dataset.shape
 nr_days = int(dataset.shape[0] / nClasses)
 # amount of features reduced by Timestamp, ID, Next_Day_Return, relabeled_returns)
@@ -64,7 +71,7 @@ scaler      = MinMaxScaler(feature_range=(0, 1))
 X_rescaled    = scaler.fit_transform(X)
 
 # split data in training and test data
-X_train, X_test, y_train, y_test = train_test_split(X_rescaled, Y, test_size=0.66, random_state=seed)
+X_train, X_test, y_train, y_test = train_test_split(X_rescaled, Y, test_size=0.33, random_state=seed)
 
 ###################
 ###     MODEL   ###
@@ -72,10 +79,9 @@ X_train, X_test, y_train, y_test = train_test_split(X_rescaled, Y, test_size=0.6
 
 def baseline_model():
     model = Sequential()
-    model.add(Dense(150, activation='relu', input_dim=121))
-    model.add(LeakyReLU(alpha=.001))   # add an advanced activation
-    model.add(Dense(50, activation='relu'))
-    model.add(Dense(25, activation='relu'))
+    model.add(Dropout(0.2, input_shape=(121,)))
+    model.add(Dense(10, kernel_initializer='normal', activation='relu'))
+    model.add(Dense(1, kernel_initializer='normal', activation='sigmoid'))
     model.add(Dense(nClasses, activation='sigmoid'))
     model.compile(optimizer='adam',
                   loss='binary_crossentropy',
@@ -88,9 +94,9 @@ def baseline_model():
 
 model   = baseline_model()
 history = model.fit(X_train, y_train,
-                 epochs=300,
-                 verbose=2,
-                 validation_data=(X_test, y_test))
+                     epochs=30,
+                     verbose=2,
+                     validation_data=(X_test, y_test))
 
 ###################
 ###  EVALUATION ###
@@ -121,29 +127,42 @@ plt.xlabel('epoch')
 plt.legend(['train', 'test'], loc='upper left')
 plt.show()
 
-
 ###################
 ###  PREDICTION ###
 ###################
 
 ynew = model.predict(X_test)
+ynew_labeled = np.array(ynew)
 
-# relabel prediction
-for i in ynew:
-    for a in i:
-        i[a >= 0.5] = 1
-        i[a < 0.5] = 0
+np.place(ynew_labeled, ynew_labeled > 0.5, [1])
+np.place(ynew_labeled, ynew_labeled <= 0.5, [0])
 
 # Visualize Buy and Sell Signals
-for i in range(ynew.shape[0]):
-    for a in range(ynew.shape[1]):
-        if ynew[i, a] == 1:
-            print("BUY: - ", classes[a], " FORECAST: ", ynew[i, a], "")
-        elif ynew[i, a] == 0:
-            print("SELL: - ",  classes[a], " FORECAST: ", ynew[i, a])
+for i in range(ynew_labeled.shape[0]):
+    for a in range(ynew_labeled.shape[1]):
+        if ynew_labeled[i, a] == 1:
+            print("BUY: - ", classes[a], " FORECAST: ", ynew_labeled[i, a], "")
+        elif ynew_labeled[i, a] == 0:
+            print("SELL: - ",  classes[a], " FORECAST: ", ynew_labeled[i, a])
 
 plt.figure()
 plt_pdR = plt.scatter(classes, ynew[0], color=colors[0])
+plt.axhline(y=0.5)
 plt.xlabel('Companies')
-plt.ylabel('Buy / Sell')
+plt.ylabel('Sell / Buy')
 plt.show()
+
+plt.figure()
+plt_pdR = plt.scatter(classes, ynew_labeled[0], color=colors[0])
+plt.xlabel('Companies')
+plt.ylabel('Sell / Buy')
+plt.show()
+
+###################
+###  K-FOLD ###
+###################
+
+estimator   = KerasClassifier(build_fn=baseline_model, epochs=10, batch_size=5, verbose=2)
+kfold       = KFold(n_splits=10, shuffle=True, random_state=seed)
+results     = cross_val_score(estimator, X, Y, cv=kfold)
+print("Results: %.2f%% (%.2f%%)" % (results.mean()*100, results.std()*100))
