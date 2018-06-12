@@ -12,7 +12,7 @@ from sklearn.model_selection import train_test_split
 # TODO - k-fold cross-validation
 
 ##########################################################
-###     FIRST SETUP: one model for all companies       ###
+###     FIRST SETUP: one model for one company         ###
 ##########################################################
 
 keras.__version__
