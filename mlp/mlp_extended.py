@@ -13,8 +13,6 @@ from keras.models import Sequential
 from keras.layers import Dense
 from keras.layers import Dropout
 
-from keras.layers import LeakyReLU
-
 from keras.wrappers.scikit_learn import KerasClassifier
 from sklearn.model_selection import KFold
 from sklearn.model_selection import cross_val_score
@@ -77,13 +75,17 @@ X_train, X_test, y_train, y_test = train_test_split(X_rescaled, Y, test_size=0.3
 ###     MODEL   ###
 ###################
 
-def baseline_model():
+def baseline_model(optimizer = "sgd", dropout=True, dropout_param=0.3, hidden_layer_size=[100,200,300]):
     model = Sequential()
-    model.add(Dropout(0.2, input_shape=(121,)))
-    model.add(Dense(10, kernel_initializer='normal', activation='relu'))
-    model.add(Dense(1, kernel_initializer='normal', activation='sigmoid'))
+    model.add(Dense(hidden_layer_size[0], input_shape=(121,), activation='relu'))
+    if dropout:
+        model.add(Dropout(dropout_param))
+    model.add(Dense(hidden_layer_size[1], kernel_initializer='normal', activation='relu'))
+    if dropout:
+        model.add(Dropout(dropout_param))
+    model.add(Dense(hidden_layer_size[2], kernel_initializer='normal', activation='sigmoid'))
     model.add(Dense(nClasses, activation='sigmoid'))
-    model.compile(optimizer='adam',
+    model.compile(optimizer=optimizer,
                   loss='binary_crossentropy',
                   metrics=['accuracy'])
 
@@ -92,9 +94,26 @@ def baseline_model():
 
     return model
 
+my_classifier = KerasClassifier(baseline_model, verbose=2)
+
+epochs = [20, 40]
+optimizer = ["sgd", "adam", "nadam"]
+
+dropout_param = [0.1, 0.2]
+param_grid = dict(epochs=epochs, optimizer=optimizer, dropout_param=dropout_param)
+
+validator = GridSearchCV(my_classifier, param_grid=param_grid, n_jobs=1)
+validator.fit(X_train, y_train)
+
+validator.cv_results_.keys()
+validator.grid_scores_
+validator.best_params_
+validator.best_score_
+validator.best_index_
+
 model   = baseline_model()
-history = model.fit(X_train, y_train,
-                     epochs=30,
+history = my_classifier.fit(X_train, y_train,
+                     epochs=100,
                      verbose=2,
                      validation_data=(X_test, y_test))
 
