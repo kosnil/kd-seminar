@@ -7,7 +7,7 @@ from eventregistry import *
 
 er = ER.EventRegistry(apiKey="5ba73408-ea81-459b-abf4-6fedd8cb8ec6")  # dany
 # er = ER.EventRegistry(apiKey = "5fed3642-762a-4abc-aabf-ac6213c1bcea")  #philipp
-# er = ER.jetbran(apiKey = "7571801b-6710-4166-90cc-9c5352ddeedd")  #andi
+# er = ER.EventRegistry(apiKey = "7571801b-6710-4166-90cc-9c5352ddeedd")  #andi
 # er = ER.EventRegistry(apiKey="dfa0a9e9-a9d7-497f-acab-54d08234bf88") #  Hendrik?
 analytics = ER.Analytics(er)
 
@@ -15,8 +15,8 @@ analytics = ER.Analytics(er)
 companies = ['Samsung', 'BASF', 'Apple', 'Tesla', 'Airbus', 'Bayer', 'BMW', 'Telefonica', 'Google', 'Allianz', 'Total']
 # companies =['Samsung']
 # DEFINE start and end date
-startDate = datetime.date(2018, 3, 11)
-endDate = datetime.date(2018, 3, 20)
+startDate = datetime.date(2017, 3, 20)
+endDate = datetime.date(2017, 5, 31)
 # Get all Business Days in Period
 time_frame = pd.bdate_range(startDate, endDate)
 
