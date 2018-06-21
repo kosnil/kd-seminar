@@ -4,9 +4,9 @@ import pandas as pd
 import time
 from eventregistry import *
 
-#er = ER.EventRegistry(apiKey="5ba73408-ea81-459b-abf4-6fedd8cb8ec6")  # dany
+er = ER.EventRegistry(apiKey="5ba73408-ea81-459b-abf4-6fedd8cb8ec6")  # dany
 #er = ER.EventRegistry(apiKey = "5fed3642-762a-4abc-aabf-ac6213c1bcea")  #philipp
-er = ER.EventRegistry(apiKey = "7571801b-6710-4166-90cc-9c5352ddeedd")  #andi
+#er = ER.EventRegistry(apiKey = "7571801b-6710-4166-90cc-9c5352ddeedd")  #andi
 #er = ER.EventRegistry(apiKey="1b673182-c9e4-4554-90cf-d082a0bd6b53") #  Hendrik?
 analytics = ER.Analytics(er)
 
@@ -14,8 +14,8 @@ analytics = ER.Analytics(er)
 companies = ['Samsung', 'BASF', 'Apple', 'Tesla', 'Airbus', 'Bayer', 'BMW', 'Telefonica', 'Google', 'Allianz', 'Total']
 
 # DEFINE start and end date
-startDate = datetime.date(2018, 6, 1)
-endDate = datetime.date(2018, 6, 18)
+startDate = datetime.date(2018, 3, 20)
+endDate = datetime.date(2018, 4, 30)
 # Get all Business Days in Period
 time_frame = pd.bdate_range(startDate, endDate)
 
@@ -65,7 +65,7 @@ for company in companies:
 
 print("All Articles fully processed")
 print("Save Data to csv")
-PATH = "er_body_data/data/article_bodies_" + str(startDate) + "_" + str(endDate) + ".json"
+PATH = "data/article_bodies_" + str(startDate) + "_" + str(endDate) + ".json"
 
 import json
 with open(PATH, 'w') as fp:
