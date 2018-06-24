@@ -5,12 +5,13 @@ import numpy as np
 import scipy
 import json
 import gensim
+import random
 from pprint import pprint
 from os import listdir
 from os.path import isfile, join
-from random import shuffle
+from collections import defaultdict
 
-retrain = False
+retrain = True
 dirPath = "../er_body_data/data/"
 inputfile_path = "../er_body_data/data/article_bodies_2018-02-18_2018-02-28.json"
 
@@ -61,22 +62,26 @@ def main():
         print("---LOAD MODEL---")
         model = gensim.models.Doc2Vec.load("doc2vec.model")
 
-    print("---TEST MODEL (Article)---") #comparison of some article (referecened by docLabels[20]) to its most similar, median-similar and least-similar article based on cosine similiarity
-    similarities = model.docvecs.most_similar(docLabels[20],topn=model.docvecs.count)
-    #print(model.docvecs[docLabels[20]])  #a sample vector
+    # First Test: comparison of some article (referecened by docLabels[20]) to its most similar, median-similar and least-similar article based on cosine similiarity
+    articlelabel = random.choice(docLabels)
+    print("---TEST MODEL (Article Similarity)---")
+    print('\nTARGET article (%s):' % (articlelabel))
+    print(dictionary.get(articlelabel))
 
-    print('\nTARGET article (%s):' % (docLabels[20]))
-    print(dictionary.get(docLabels[20]))
-    print("\nSimilar/dissimilar articles compared to the target article")
-    for label, index in [('MOST similar', 0), ('MEDIAN similar', len(similarities) // 2), ('LEAST similar', len(similarities) - 1)]:
+    similarities = model.docvecs.most_similar(articlelabel, topn=model.docvecs.count) #calculate the similarity to all other article-vectors
+
+    for label, index in [('MOST similar', 0), ('MEDIAN similar', len(similarities) // 2), ('LEAST similar', len(similarities) - 1)]:    #prints the label and the content of the most/median/least similar article
         print(u'\n%s %s' % (label, similarities[index]))
         print(dictionary.get(similarities[index][0]))
 
-    print("\n---TEST MODEL (Word)---") #comparison of some word (here "word") to its 20 most similar words based on cosine similiarity
+    # Second Test: comparison of some word (here "word") to its 20 most similar words based on cosine similiarity
     word = "awesome"
-    for w in model.most_similar(word, topn=20):
+    print("\n---TEST MODEL (Word Similarity. Target: %s)---" %(word))
+    for w in model.most_similar(word, topn=10):
         print(w)
 
+    #Demo of a sample vector
+    #print(model.docvecs[docLabels[20]])
 
 class LabeledLineSentence(object):
     def __init__(self, doc_list, labels_list):
