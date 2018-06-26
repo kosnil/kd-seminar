@@ -1,3 +1,7 @@
 .idea/*
 mlp/.ipynb_checkpoints/*
 *.pyc
+doc2vec/*.model
+doc2vec/*.model.*
+doc2vec/data/*.json
+*/.idea
