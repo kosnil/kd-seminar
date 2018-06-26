@@ -26,7 +26,8 @@ for k in model.docvecs.doctags.keys():
     if date in result[company].keys():
         result[company][date].append(model.docvecs[k].tolist())
     else:
-         result[company][date] = model.docvecs[k].tolist()
+        result[company][date] = []
+        result[company][date].append(model.docvecs[k].tolist())
 
 
 PATH = "data/article_vectors_" + str(mindate.date()) + "-" + str(maxdate.date()) + ".json"
