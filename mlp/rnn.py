@@ -8,6 +8,8 @@ from keras.layers import Dense, LSTM
 from keras.optimizers import Adam
 from sklearn.model_selection import train_test_split
 
+# TODO - use previous day return as additional feature dim
+
 # **Read in financial Data**
 fin_data = pd.read_csv("finance_data/data/aggregated_returns.csv", index_col=["Timestamp"], parse_dates=True)
 fin_data = fin_data.drop(columns=["Unnamed: 0"])
