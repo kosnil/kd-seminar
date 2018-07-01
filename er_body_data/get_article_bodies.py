@@ -14,8 +14,8 @@ analytics = ER.Analytics(er)
 companies = ['Samsung', 'BASF', 'Apple', 'Tesla', 'Airbus', 'Bayer', 'BMW', 'Telefonica', 'Google', 'Allianz', 'Total']
 
 # DEFINE start and end date
-startDate = datetime.date(2017, 9, 28)
-endDate = datetime.date(2017, 10, 1)
+startDate = datetime.date(2016, 9, 25)
+endDate = datetime.date(2016, 9, 30)
 # Get all Business Days in Period
 time_frame = pd.bdate_range(startDate, endDate)
 
