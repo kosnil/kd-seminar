@@ -1,24 +1,52 @@
 import pandas as pd
 import numpy as np
+import collections
 import os
 import matplotlib.pyplot as plt
 
+import evaluation.classification as evaluation
+
+from keras import backend as K
 from keras.models import Sequential
-from keras.layers import Dense, LSTM
-from keras.optimizers import Adam
+from keras.layers import Dense, LSTM, Bidirectional, Dropout
+from keras.wrappers.scikit_learn import KerasClassifier
+
 from sklearn.model_selection import train_test_split
+from sklearn.model_selection import GridSearchCV
+from sklearn.metrics import confusion_matrix, roc_curve, auc
 
-# TODO - use previous day return as additional feature dim
+grid_search = True
+save = False
+command_line = False
+company = 'BMW'
 
-# **Read in financial Data**
-fin_data = pd.read_csv("finance_data/data/aggregated_returns.csv", index_col=["Timestamp"], parse_dates=True)
+# Google, BMW, BASF, Samsung  Telefonica  Allianz  Total  Bayer  Tesla  Airbus  Apple
+
+###################
+###     DATA    ###
+###################
+
+# Read in financial Data
+if command_line:
+    fin_data = pd.read_csv("finance_data/data/aggregated_returns.csv", index_col=["Timestamp"], parse_dates=True)
+else:
+    fin_data = pd.read_csv("../finance_data/data/aggregated_returns.csv", index_col=["Timestamp"], parse_dates=True)
+
 fin_data = fin_data.drop(columns=["Unnamed: 0"])
 fin_data.head()
 
 fin_data_class = fin_data.applymap(lambda x: 0 if x < 0 else 1)
 
-# **Read in training Data**
-path_to_data = "doc2vec/data/article_vectors_2017-09-28-2018-06-18.json"
+# stable training base, same number of 0 and 1
+print("Occurrences of all classes:")
+print(collections.Counter(fin_data_class[company].values))
+
+# Read in training Data
+if command_line:
+    path_to_data = "doc2vec/data/article_vectors_2017-09-28-2018-06-18.json"
+else:
+    path_to_data = "../doc2vec/data/article_vectors_2017-09-28-2018-06-18.json"
+
 data = pd.read_json(path_to_data)
 data.head()
 
@@ -32,56 +60,91 @@ fin_data_class = fin_data_class[fin_data_class.index.isin(available_dates)]
 data = data[data.index.isin(available_dates)]
 data = data['Apple']
 data.shape
-len(available_dates)
+length = len(available_dates)
 
-no_of_articles = 50 # 50 articles per day
-no_of_attributes = 100 # 100 doc2vec attributes
-no_of_days = len(fin_data_class['Apple'].values) # 148 days
+no_of_articles = 50  # 50 articles per day
+no_of_attributes = 100
+# no_of_attributes = 101  # 100 doc2vec attributes + previous day return
+no_of_days = len(fin_data_class[company].values)  # 148 days
 
 X = np.zeros((no_of_days, no_of_articles, no_of_attributes))
 Y = np.zeros((no_of_days, 1))
 
 for date in range(0, no_of_days):
-    Y[date] = fin_data_class['Apple'].values[date]
+    Y[date] = fin_data_class[company].values[date]
     for article in range(0, no_of_articles):
         X[date][article] = data[date][article]
-        Y[date] = fin_data_class['Apple'].values[date]
+        # X[date][article] = data[date][article] + Y[date].tolist()
 
 x_train, x_val, y_train, y_val = train_test_split(X, Y, test_size=0.3, random_state=1)
 
-def bidirectional_lstm_model(no_of_articles, no_of_attributes):
+
+###################
+###     MODEL   ###
+###################
+
+def bidirectional_lstm_model(optimizer="rmsprop", dropout_param=0.1):
     print('Building LSTM model...')
     model = Sequential()
-    model.add(LSTM(rnn_size, activation="relu", input_shape=(no_of_articles, no_of_attributes)))
-    model.add(Dense(1, activation='sigmoid'))
-    optimizer = Adam(lr=learning_rate)
-    model.compile(loss='binary_crossentropy', optimizer=optimizer, metrics=['acc'])
+    model.add(Bidirectional(
+        LSTM(no_of_attributes, return_sequences=True, activation=K.tanh, recurrent_activation=K.relu),
+        batch_input_shape=(None, no_of_articles, no_of_attributes)))
+    model.add(LSTM(no_of_attributes))
+    model.add(Dropout(dropout_param))
+    model.add(Dense(1, activation=K.sigmoid))
+    model.compile(loss='binary_crossentropy', optimizer=optimizer, metrics=['acc', evaluation.recall, evaluation.f1])
     print('LSTM model built.')
 
     return model
 
-rnn_size = 100 # size of RNN
-vector_dim = 100
-learning_rate = 0.0001 #learning rate
 
-model_sequence = bidirectional_lstm_model(no_of_articles, no_of_attributes)
+#########################
+###     Grid-Search   ###
+#########################
 
-batch_size = 30 # minibatch size
-history = model_sequence.fit(x_train, y_train,
-                 batch_size=batch_size,
-                 shuffle=True,
-                 epochs=36,
-                 validation_split=0.3)
+if grid_search:
+    my_classifier = KerasClassifier(bidirectional_lstm_model, verbose=2)
 
-#save the model
+    epochs = [3, 20, 40, 100]
+    optimizer = ["rmsprop"]
 
-save_dir = os.path.join(os.getcwd(), 'mlp')
-model_name = 'models/my_model_sequence_lstm.final.hdf5'
-model_path = os.path.join(save_dir, model_name)
-model_sequence.save(model_path)
-print('Saved trained model at %s ' % model_path)
+    dropout_param = [0.1, 0.2]
+    param_grid = dict(epochs=epochs, optimizer=optimizer, dropout_param=dropout_param)
 
-# summarize history for accuracy
+    validator = GridSearchCV(my_classifier, param_grid=param_grid, n_jobs=1)
+    validator.fit(x_train, y_train)
+
+    validator.cv_results_.keys()
+    validator.best_params_
+    validator.best_score_
+    validator.best_index_
+
+    model_sequence = bidirectional_lstm_model(optimizer=validator.best_params_['optimizer'],
+                                              dropout_param=validator.best_params_['dropout_param'])
+
+    history = model_sequence.fit(x_train, y_train,
+                                 epochs=validator.best_params_['epochs'],
+                                 validation_split=0.3)
+
+########################
+###     Best Model   ###
+########################
+
+if grid_search == False:
+    model_sequence = bidirectional_lstm_model(optimizer="rmsprop", dropout_param=0.1)
+
+    history = model_sequence.fit(x_train, y_train,
+                                 batch_size=25,
+                                 epochs=40,
+                                 validation_split=0.3)
+
+print(model_sequence.summary())
+
+###################
+###  EVALUATION ###
+###################
+
+# plot history for accuracy
 plt.plot(history.history['acc'])
 plt.plot(history.history['val_acc'])
 plt.title('model accuracy')
@@ -90,7 +153,7 @@ plt.xlabel('epoch')
 plt.legend(['train', 'test'], loc='upper left')
 plt.show()
 
-# summarize history for loss
+# plot history for loss
 plt.plot(history.history['loss'])
 plt.plot(history.history['val_loss'])
 plt.title('model loss')
@@ -99,6 +162,37 @@ plt.xlabel('epoch')
 plt.legend(['train', 'test'], loc='upper left')
 plt.show()
 
-ynew = model_sequence.predict_classes(x_val)
+y_pred = model_sequence.predict_classes(x_val).ravel()
 for i in range(len(x_val)):
-	print("X=%s, Predicted=%s" % (y_val[i], ynew[i]))
+    print("X=%s, Predicted=%s" % (y_val[i], y_pred[i]))
+
+# Confusion Matrix
+cm = confusion_matrix(y_val, y_pred)
+print(cm)
+
+# ROC - Curve
+fpr_keras, tpr_keras, thresholds_keras = roc_curve(y_val, y_pred)
+
+# AUC - Curve
+auc_keras = auc(fpr_keras, tpr_keras)
+
+plt.figure(1)
+plt.plot([0, 1], [0, 1], 'k--')
+plt.plot(fpr_keras, tpr_keras, label='LSTM - Classification (area = {:.3f})'.format(auc_keras))
+plt.xlabel('False positive rate')
+plt.ylabel('True positive rate')
+plt.title('ROC curve')
+plt.legend(loc='best')
+plt.show()
+
+#############
+###  Save ###
+#############
+
+if save:
+    # save the model
+    save_dir = os.path.join(os.getcwd(), 'mlp')
+    model_name = 'models/my_model_sequence_lstm.final.hdf5'
+    model_path = os.path.join(save_dir, model_name)
+    model_sequence.save(model_path)
+    print('Saved trained model at %s ' % model_path)
