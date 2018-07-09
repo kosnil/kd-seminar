@@ -186,6 +186,7 @@ for company in fin_data_class.columns:
 
         # Confusion Matrix
         cm = confusion_matrix(y_val, y_pred)
+        print("Confusion-Matrix -> ", company)
         print(cm)
 
         # ROC - Curve
