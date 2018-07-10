@@ -35,7 +35,10 @@ for id in STOCKS:
     df[company].iloc[np.where(df[company] == 0)] = np.nan
     df[company].fillna(method='ffill',inplace=True)
 
+    # Wrong
     df[company] = np.log(df[company]) - np.log(df[company].shift(1))
+
+
     df = df.dropna()
     df = df.reset_index(drop=True)
 
