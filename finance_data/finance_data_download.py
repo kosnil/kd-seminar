@@ -36,8 +36,7 @@ for id in STOCKS:
     df[company].fillna(method='ffill',inplace=True)
 
     # Wrong
-    # df[company] = np.log(df[company]) - np.log(df[company].shift(1))
-    df[company] = np.log(df[company]) - np.log(df[company].shift(-1))
+    df[company] = np.log(df[company]) - np.log(df[company].shift(1))
 
 
     df = df.dropna()
