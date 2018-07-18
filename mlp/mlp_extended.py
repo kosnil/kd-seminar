@@ -207,6 +207,7 @@ for i in range(ynew_labeled.shape[0]):
 plt.figure()
 plt_pdR = plt.scatter(classes, ynew[0], color=colors[0])
 plt.axhline(y=0.5)
+plt.xticks(rotation=90)
 plt.xlabel('Companies')
 plt.ylabel('Sell / Buy')
 plt.show()
@@ -215,6 +216,7 @@ plt.figure()
 plt_pdR = plt.scatter(classes, ynew_labeled[0], color=colors[0])
 plt.xlabel('Companies')
 plt.ylabel('Sell / Buy')
+plt.xticks(rotation=90)
 plt.show()
 
 ###################

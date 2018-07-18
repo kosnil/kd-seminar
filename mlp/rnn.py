@@ -211,7 +211,7 @@ for company in fin_data_class.columns:
         print(cm)
 
         # F-Measure
-        f1_measure = f1_score(y_val, y_pred, average=None)
+        #f1_measure = f1_score(y_val, y_pred, average=None)
         #print("F1 - Measure: ", f1_measure)
         #print("F1 - Measure: ", evaluation.f1)
         #print("Recall: ", evaluation.recall)
@@ -252,11 +252,13 @@ for company in fin_data_class.columns:
             plot_model(model_sequence, to_file='../mlp/rnn.png')
 
 
+print("file:")
+
 # Read in training Data
 if command_line:
-    df_predictions.to_csv('mlp/predictions/predictions_rnn.csv', sep=';')
+    df_predictions.to_csv('mlp/predictions/predictions_rnn.csv', sep='\t')
 else:
-    df_predictions.to_csv('../mlp/predictions/predictions_rnn.csv', sep=';')
+    df_predictions.to_csv('../mlp/predictions/predictions_rnn.csv', sep='\t')
 
 #############
 ###  Save ###
