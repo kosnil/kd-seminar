@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 import keras
+import collections
 
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.model_selection import GridSearchCV
@@ -16,6 +17,8 @@ from keras.layers import Dropout
 from keras.wrappers.scikit_learn import KerasClassifier
 from sklearn.model_selection import KFold
 from sklearn.model_selection import cross_val_score
+from sklearn.metrics import confusion_matrix, roc_curve, auc
+import evaluation.classification as evaluation
 
 ##########################################################
 ###     FIRST SETUP: one model for all companies       ###
@@ -30,8 +33,8 @@ colors = ['b', 'c', 'y', 'm', 'r']
 ###################
 
 # read in data
-#dataset = pd.read_csv("../final_data/complete_data.csv")
-dataset = pd.read_csv("final_data/complete_data.csv")
+dataset = pd.read_csv("../final_data/complete_data.csv")
+#dataset = pd.read_csv("final_data/complete_data.csv")
 
 dataset = dataset.drop(columns=['Unnamed: 0'])
 classes = dataset.ID.unique()
@@ -49,6 +52,9 @@ nr_days = int(dataset.shape[0] / nClasses)
 nr_feats = dataset.shape[1] - 4
 print("Days {}".format(nr_days))
 print("Features {}".format(nr_feats))
+
+print("# Occurrences of all classes:")
+#print(collections.Counter(fin_data_class[company].values))
 
 X = []
 labels_to_drop = ["Timestamp", "ID", "Next_Day_Return", "relabeled_returns"]
@@ -73,7 +79,7 @@ X_train, X_test, y_train, y_test = train_test_split(X_rescaled, Y, test_size=0.3
 ###     MODEL   ###
 ###################
 
-def baseline_model(optimizer = "sgd", dropout=True, dropout_param=0.3, hidden_layer_size=[100,200,300]):
+def baseline_model(optimizer = "nadam", dropout=True, dropout_param=0.3, hidden_layer_size=[100,200,300]):
     model = Sequential()
     model.add(Dense(hidden_layer_size[0], input_shape=(121,), activation='relu'))
     if dropout:
@@ -85,7 +91,7 @@ def baseline_model(optimizer = "sgd", dropout=True, dropout_param=0.3, hidden_la
     model.add(Dense(nClasses, activation='sigmoid'))
     model.compile(optimizer=optimizer,
                   loss='binary_crossentropy',
-                  metrics=['accuracy'])
+                  metrics=['acc', evaluation.recall, evaluation.f1])
 
     model.summary()
     plot_model(model, to_file='mlp.png', show_shapes=True, show_layer_names=True)
@@ -153,8 +159,42 @@ plt.show()
 ynew = model.predict(X_test)
 ynew_labeled = np.array(ynew)
 
+# ROC - Curve
+fpr_keras, tpr_keras, thresholds_keras = roc_curve(y_test, ynew)
+
+# AUC - Curve
+auc_keras = auc(fpr_keras, tpr_keras)
+
+plt.figure(1)
+plt.plot([0, 1], [0, 1], 'k--')
+plt.plot(fpr_keras, tpr_keras, label='LSTM - Classification (area = {:.3f})'.format(auc_keras))
+plt.xlabel('False positive rate')
+plt.ylabel('True positive rate')
+plt.title('%s - ROC curve')
+plt.legend(loc='best')
+plt.show()
+
 np.place(ynew_labeled, ynew_labeled > 0.5, [1])
 np.place(ynew_labeled, ynew_labeled <= 0.5, [0])
+
+# Confusion Matrix
+cm = confusion_matrix(y_test, ynew_labeled)
+
+cm = confusion_matrix(y_test.ravel(), ynew_labeled.ravel())
+print("Confusion-Matrix")
+print(cm)
+
+fpr_keras, tpr_keras, thresholds_keras = roc_curve(y_test.ravel(), ynew.ravel())
+auc_keras = auc(fpr_keras, tpr_keras)
+
+plt.figure(1)
+plt.plot([0, 1], [0, 1], 'k--')
+plt.plot(fpr_keras, tpr_keras, label='Keras (area = {:.3f})'.format(auc_keras))
+plt.xlabel('False positive rate')
+plt.ylabel('True positive rate')
+plt.title('ROC curve')
+plt.legend(loc='best')
+plt.show()
 
 # Visualize Buy and Sell Signals
 for i in range(ynew_labeled.shape[0]):

@@ -6,11 +6,13 @@ import matplotlib.pyplot as plt
 
 import evaluation.classification as evaluation
 
+from keras.utils import plot_model
 from keras import backend as K
 from keras.models import Sequential
 from keras.layers import Dense, LSTM, Bidirectional, Dropout
 from keras.wrappers.scikit_learn import KerasClassifier
 
+from sklearn.metrics import f1_score
 from sklearn.model_selection import train_test_split
 from sklearn.model_selection import GridSearchCV
 from sklearn.metrics import confusion_matrix, roc_curve, auc
@@ -38,9 +40,13 @@ fin_data_class = fin_data.applymap(lambda x: 0 if x < 0 else 1)
 
 # Read in training Data
 if command_line:
-    path_to_data = "doc2vec/data/article_vectors_2016-05-09-2018-06-18.json"
+    #path_to_data = "doc2vec/data/article_vectors_2016-05-09-2018-06-18.json"
+    path_to_data = "doc2vec/data/article_vectors_2014-02-03-2018-06-18_model_id1.json"
+
 else:
-    path_to_data = "../doc2vec/data/article_vectors_2016-05-09-2018-06-18.json"
+    #path_to_data = "doc2vec/data/article_vectors_2016-05-09-2018-06-18.json"
+    path_to_data = "../doc2vec/data/article_vectors_2014-02-03-2018-06-18_model_id1.json"
+
 
 data = pd.read_json(path_to_data)
 data.head()
@@ -82,10 +88,10 @@ for company in fin_data_class.columns:
         for date in range(0, no_of_days):
             Y[date] = fin_data_class[company].values[date]
             if type(values[date]) is list:
-                print("Number of Articles: ", len(values[date]))
+                #print("Number of Articles: ", len(values[date]))
                 size = len(values[date])
             else:
-                print("No list")
+                #print("No list")
                 size = 0
 
             for article in range(0, size):
@@ -105,6 +111,7 @@ for company in fin_data_class.columns:
             model.add(Bidirectional(
                 LSTM(no_of_attributes, return_sequences=True, activation=K.tanh, recurrent_activation=K.relu),
                 batch_input_shape=(None, no_of_articles, no_of_attributes)))
+            model.add(Dropout(dropout_param))
             model.add(LSTM(no_of_attributes))
             model.add(Dropout(dropout_param))
             model.add(Dense(1, activation=K.sigmoid))
@@ -165,7 +172,7 @@ for company in fin_data_class.columns:
         # plot history for accuracy
         plt.plot(history.history['acc'])
         plt.plot(history.history['val_acc'])
-        plt.title('model accuracy')
+        plt.title('%s - model accuracy' % company)
         plt.ylabel('accuracy')
         plt.xlabel('epoch')
         plt.legend(['train', 'test'], loc='upper left')
@@ -174,20 +181,40 @@ for company in fin_data_class.columns:
         # plot history for loss
         plt.plot(history.history['loss'])
         plt.plot(history.history['val_loss'])
-        plt.title('model loss')
+        plt.title('%s - model loss' % company)
         plt.ylabel('loss')
         plt.xlabel('epoch')
         plt.legend(['train', 'test'], loc='upper left')
         plt.show()
 
         y_pred = model_sequence.predict_classes(x_val).ravel()
+
+        '''
         for i in range(len(x_val)):
             print("X=%s, Predicted=%s" % (y_val[i], y_pred[i]))
+        '''
+
+        # plot history for loss
+        '''
+        plt.plot(y_val)
+        plt.plot(y_pred)
+        plt.title('%s - Predicted vs. Real' % company)
+        plt.ylabel('Class')
+        plt.xlabel('Time')
+        plt.legend(['Predicted', 'Real Values'], loc='upper left')
+        plt.show()
+        '''
 
         # Confusion Matrix
         cm = confusion_matrix(y_val, y_pred)
         print("Confusion-Matrix -> ", company)
         print(cm)
+
+        # F-Measure
+        f1_measure = f1_score(y_val, y_pred, average=None)
+        #print("F1 - Measure: ", f1_measure)
+        #print("F1 - Measure: ", evaluation.f1)
+        #print("Recall: ", evaluation.recall)
 
         # ROC - Curve
         fpr_keras, tpr_keras, thresholds_keras = roc_curve(y_val, y_pred)
@@ -200,7 +227,7 @@ for company in fin_data_class.columns:
         plt.plot(fpr_keras, tpr_keras, label='LSTM - Classification (area = {:.3f})'.format(auc_keras))
         plt.xlabel('False positive rate')
         plt.ylabel('True positive rate')
-        plt.title('ROC curve')
+        plt.title('%s - ROC curve' % company)
         plt.legend(loc='best')
         plt.show()
 
@@ -209,20 +236,27 @@ for company in fin_data_class.columns:
         ###################
 
         preds = model_sequence.predict_classes(X).ravel()
+
+        '''
         for i in range(len(X)):
             print("X=%s, Predicted=%s" % (Y[i], preds[i]))
-
+        '''
         df_predictions[company] = preds
         # shift returns +1 because it is a prediction
-        df_predictions[company] = df_predictions[company].shift(1)
+        df_predictions[company] = df_predictions[company].shift(-1)
+
+        # Read in training Data
+        if command_line:
+            plot_model(model_sequence, to_file='mlp/rnn.png')
+        else:
+            plot_model(model_sequence, to_file='../mlp/rnn.png')
 
 
 # Read in training Data
 if command_line:
-    df_predictions.to_csv('mlp/predictions/predictions_rnn.csv', sep='\t')
+    df_predictions.to_csv('mlp/predictions/predictions_rnn.csv', sep=';')
 else:
-    df_predictions.to_csv('../mlp/predictions/predictions_rnn.csv', sep='\t')
-
+    df_predictions.to_csv('../mlp/predictions/predictions_rnn.csv', sep=';')
 
 #############
 ###  Save ###
